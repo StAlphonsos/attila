@@ -1,0 +1,21 @@
+#!/bin/sh
+##
+myuid=`id -u`
+mysockname=emacs${myuid}/server
+tmpdir=${TMPDIR-$HOME/tmp}
+mysock=${EMAX_SOCK-x}
+[ "${mysock}" = x ] && \
+    mysock="`ls -1t /tmp/${mysockname} ${tmpdir}/${mysockname} 2>/dev/null | head -1`"
+[ ! -S ${mysock} ] && {
+    echo $0: no socket found
+    exit 1
+}
+# echo emacsclient --socket-name=${mysock} $*
+emacsclient --socket-name=${mysock} $*
+##
+# Variables:
+# mode: shell-script
+# indent-tabs-mode: nil
+# tab-width: 4
+# End
+##

@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+c="`cutbuf`"
+c=${c-http://stalphonsos.com/~attila}
+echo '*splort* '$c
+nsopen -t `cutbuf`

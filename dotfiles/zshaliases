@@ -1,0 +1,150 @@
+# attila zsh setup -*- mode:shell-script; indent-tabs-mode:nil -*-
+#
+function psk () { psmap -v "$*" kill }
+function psk9 () { psmap -v "$*" kill -9 }
+function spsk () { psmap -v "$*" sudo kill }
+function spsk9 () { psmap -v "$*" sudo kill -9 }
+function pesos () { ub grok "$*" MXN to USD }
+function dollars () { ub grok "$*" USD to MXN }
+function meters () { ub grok "$*" meters to feet }
+function kms () { ub grok "$*" km to miles }
+function feet () { ub grok "$*" feet to meters }
+function miles () { ub grok "$*" miles to km }
+function liters () { ub grok "$*" liters to gallons }
+function gallons () { ub grok "$*" gallons to liters }
+
+function dmalloc () {
+  eval `command dmalloc -b $*`;
+}
+
+function edit () {
+  _bin=`which ${EDITOR}`
+  _cmd=/bin/ed
+  if [ "x${_bin}" != "x" -a -x ${_bin} ]; then
+    _cmd="${EDITOR}"
+  fi
+  _sudo=""
+  for f in $* /dev/null; do
+    if [ "x$f" != "x/dev/null" ]; then
+      if [ -f $f -a ! -O $f ]; then
+        _sudo=sudo
+        if [ "${_cmd}" = "gnuclient" -o "${_cmd}" = "emacsclient" ]; then
+          _sudo="${_sudo} xterm -e"
+          _cmd="${OEDITOR}"
+          if [ x"${_cmd}" = "x" ]; then
+            _cmd="teco"
+          fi
+        fi
+        break
+      fi
+    fi
+  done
+#  echo ${_sudo} ${_cmd} $*
+  /bin/sh -c "${_sudo} ${_cmd} $*"
+}
+
+alias mv='nocorrect mv'
+alias cp='nocorrect cp'
+alias ln='nocorrect ln'
+alias mkdir='nocorrect mkdir'
+
+alias df='df -k'
+#alias clean='/bin/csh -c "rm -f *~ \#*\# *.BAK *.OLD .*~ .\#*\# .*.BAK .*.OLD core gmon.out .tec*"'
+alias cx="chmod +x"
+alias l="ls -sFC"
+alias ll="ls -l"
+alias rez=". $HOME/.zshrc"
+alias ree=". $HOME/.zshenv"
+alias rea=". $HOME/.zshaliases"
+alias s0rt="sort -n"
+alias m=more
+alias ztvf="tar ztvf"
+alias zxvf="tar zxvf"
+alias tvf="tar tvf"
+alias xvf="tar xvf"
+alias lart="ls -lart"
+alias cvz='cvs -z 9'
+alias zudo='sudo zsh'
+#alias vi=vile
+## Random stuff
+alias wrct='xmms http://128.2.39.39:80/cgi-bin/swsend/tmp/source1'
+alias xvi='aterm -e vi'
+alias svi='aterm -e sudo vi'
+alias p10='ping -c 10'
+alias p20='ping -c 20'
+alias pg='sudo -u pgsql pg_ctl -l ~pgsql/logfile -D ~pgsql/data'
+alias techs='sq akam trly sunw ibm hpq dell intc aco aol csco'
+alias stocks='sq akam als abb aco'
+#alias xv='xloadimage'
+alias srm='rm -P'
+alias unfuck='([ -L $MOZLOCK ] && ls -l $MOZLOCK && rm $MOZLOCK) || echo no lock to unfuck'
+alias kmoz='psk9 mozilla; psk mozilla; unfuck'
+alias sancho='rez; repanza; ssh sancho'
+alias superblow='rez; ssh superblow'
+alias hogs='du -sk * | s0rt'
+alias hogtail='hogs|tail'
+alias type=more
+alias dir='ls -sFC'
+alias psg='psmap -vn'
+alias ck='sudo /usr/local/etc/claka-control.sh'
+alias ids='ssh-add -l'
+alias vmsys='systat vmstat 1'
+alias plmk='perl Makefile.PL PREFIX=/usr/local INSTALLDIRS=site'
+alias otx='perl -I/home/attila/consulting/troy/svn/OTX -I/home/attila/consulting/troy/svn/OTX/Modules -I/home/attila/consulting/troy/svn/OTX/Legacy/cgi'
+alias troy='perl -I/home/attila/consulting/troy/svn/Troy -I/home/attila/consulting/troy/svn/Troy/Legacy/cgi'
+alias squibb='perl -I/var/www/usr/local/code/squibb'
+alias panza='ssh hawg grep tmrl /var/log/https/bitsend.com/access_log|tail -1|awk "{print \$1}"'
+alias ttop='todo -f -children'
+alias new='ls -lart | tail -20'
+alias lockdown='fetchmail --quit; xscreensaver-command -lock; zzz'
+alias fmail='fetchmail -v -L $HOME/tmp/fetchmail.log -d 600 -K -F -f /crypt/dot/files/fetchmail/conf'
+alias grok='ub grok'
+alias satstr='scraper $DW6K_STATUS_URL'
+alias satstat="scraper -pattern='RxCode:Receive Status:.*\(RxCode\s(\d+)' -pattern='TxCode:Transmit Status:.*\(TxCode\s(\d+)\)' -pattern='SignalStrength:Signal\sStrength\.+\s(\d+)\s' $DW6K_STATUS_URL"
+alias satstatl="scraper -loop=forever -sleep=10 -pattern='RxCode:Receive Status:.*\(RxCode\s(\d+)' -pattern='TxCode:Transmit Status:.*\(TxCode\s(\d+)\)' -pattern='SignalStrength:Signal\sStrength\.+\s(\d+)\s' $DW6K_STATUS_URL"
+alias glimpse_src='glimpse -H $HOME/.glimpse_indexes/openbsd-src'
+alias glimpse_wit='glimpse -H $HOME/.glimpse_indexes/troy-wit'
+alias heap='wget --http-user=attila --http-passwd=Coh6shob'
+alias osd_logerr='osd_cat -p middle -d 1 -s 1 -o 0 -A left -i 150 -c red -l 5 -w'
+alias osd_logmail='osd_cat -p bottom -d 1 -s 1 -o 0 -A left -i 150 -c green -l 3 -w'
+alias osd_logmsg='osd_cat -p top -d 1 -s 1 -o 0 -A left -i 150 -c yellow -l 5 -w'
+alias main='screen -S main -c $HOME/.screenrc-main'
+alias screens='screen -ls'
+alias a='pushd ~/tmp; ./apache.sh; popd'
+alias b='./Build'
+function zt () {
+  ZT="$*";
+  echo "[ZT: $ZT]"
+  export ZT
+}
+function uzt () {
+  ZT=""
+  echo "[Cleared ZT]"
+  export ZT
+}
+alias vlc_server='vlc -I http --http-src /space/bits/vlc_web --http-host 10.90.0.8:8123 file:///space/bits/music/'
+alias dl='/usr/local/bin/wget -c --progress=dot:mega --no-check-certificate'
+alias ap='sudo /usr/local/apache/bin/apachectl'
+alias mkdd='mkdir `date +"%Y-%m-%d"`'
+
+## more portable cleaners than my stupid old csh-based alias:
+
+alias filth="find . -maxdepth 1 -type f -a \( -name '*~' -o -name '\#*\#' -o -name '*.BAK' -o -name '*.OLD' -o -name '.*~' -o -name '.*.BAK' -o -name '.*.OLD' -o -name core \)"
+alias clean='filth -print -exec rm {} \;'
+alias dfilth="find . -type f -a \( -name '*~' -o -name '\#*\#' -o -name '*.BAK' -o -name '*.OLD' -o -name '.*~' -o -name '.*.BAK' -o -name '.*.OLD' -o -name core \)"
+alias dclean='dfilth -print -exec rm {} \;'
+
+alias rfrom='grep ^From: /var/mail/attila'
+alias check='flail -1Q check'
+alias ronidate='date +"%b%d%y"'
+alias worklog='nb -b /home/attila/public_html/worklog'
+
+alias lytix-vpn='sudo openvpn --cd $HOME/Work/Lytix/Crypto --config lytix.conf'
+alias lytix-vpn2='sudo openvpn --cd $HOME/Work/Lytix/Crypto/LytixVPN2_generic_sean-levy --config LytixVPN2.conf'
+alias now="date +'%^a %d-%^b-%Y %T'"
+
+function nscreen {
+  env SCREEN_NAME="$*" screen -S "$*"
+}
+alias lscreen='screen -ls'
+alias vpn='sudo openvpn --cd $HOME/personal/v.redyucatan.net/ssenkaew --config client.conf'

@@ -1,0 +1,146 @@
+#!/usr/bin/perl
+#
+use Getopt::Std;
+use IO::Socket;
+##
+@P = split("/", $0);
+$P = pop(@P);
+$V = '0.1';
+$ISBN = 0;
+$U = <<__UsaGE__;
+$P $V: front-end to netscape
+Copyright (C) 2000,2001 by St. Alphonsos.  All Rights Reserved.
+
+usage: $P [-hvbnOi] [-o host:port] [url]
+
+       -h print this       -v be verbose,
+       -O use opend        -b run netscape in background
+       -i read url from stdin
+
+       -o addr             address of opend server
+__UsaGE__
+$| = 1;                                 # for mumbling
+$DEF_OPEND_ADDR = '172.16.254.2:6543';
+##
+sub opend {
+  my $url = shift(@_);
+  my $opend_addr = shift(@_) || $DEF_OPEND_ADDR;
+  my $sock = IO::Socket::INET->new(PeerAddr => $opend_addr,Proto=>'tcp') ||
+    die "$P: socket to $opend_addr: $!\n";
+  print $sock "$url\n";
+  print $sock "#QUIT\n";
+  $sock->close();
+}
+##
+die $U unless getopts('NhvbnOo:iIt');
+die $U if $opt_h;
+$Verbose = $opt_v;
+$BG = " &" if $opt_b;
+$ISBN = $opt_I;
+$DEF_URL = 'http://my.yahoo.com/';
+$DontDoit = $opt_n;
+$Tab = $opt_t? 'new-tab': 'new-window';
+#$NSBINS{netscape} = '/usr/local/netscape/netscape';
+$NSBINS{netscape} = '/usr/local/bin/netscape';
+$NSBINS{konq} = '/usr/local/bin/kfmclient exec';
+#$NSBINS{konq} = '/usr/local/bin/konqueror';
+#$NSBINS{mozilla} = '/usr/X11R6/bin/mozilla';
+$NSBINS{mozilla} = '/usr/local/bin/mozilla';
+$NSBINS{links} = '/usr/local/bin/links -g -mode 900x900';
+$NSBINS{dillo} = '/usr/local/bin/dillo';
+$NSBINS{firefox} = '/usr/bin/firefox';
+#$NSBINS{weasel} = '/usr/local/bin/swiftweasel32';
+#$nsbin = "/usr/bin/netscape";
+#$nsbin = "/usr/X11R6/bin/mozilla";
+#$nsbin = "/usr/local/netscape/netscape";
+#$nsbin = "/usr/local/bin/konqueror";
+#$nsbin = $NSBINS{konq};
+#$nsbin = $NSBINS{netscape};
+#$nsbin = $NSBINS{links};
+#$nsbin = $NSBINS{mozilla};
+#$nsbin = $NSBINS{dillo};
+$nsbin = $NSBINS{firefox};
+$wget = $ENV{HOME}."/bin/wgetit";
+$opend = undef;
+$cmd = undef;
+if ($opt_i) {
+  $fn = <STDIN>;
+} else {
+  $fn = join(" ",@ARGV);
+}
+if (!defined($fn)) {
+  $url = "";
+} elsif ($fn =~ /^\/.*/) {
+  $url = "file://$fn";
+} elsif ($fn =~ /^\d+\.\d+\.\d+\.\d+$/) {
+  $fn =~ s/^\s+//;
+  $fn =~ s/\s+$//;
+  $url = "http://127.0.0.1/~snl/ip.cgi?host=$fn";
+} elsif ($fn =~ /^[\-\d]+$/) {
+  $fn =~ s/^\s+//;
+  $fn =~ s/\s+$//;
+  my $use_isbn = $ISBN || ($fn =~ /-/);
+  $use_isbn = (length($fn) > 10) unless $use_isbn;
+  if (!$use_isbn) {
+    $url = "http://127.0.0.1/~snl/ip.cgi?host=$fn";
+  } else {
+    chomp($isbn = $fn);
+    $isbn =~ s/-//g;
+    print "# saw ISBN: $isbn\n" if $Verbose;
+    $url = "http://isbn.nu/$isbn/price";
+  }
+} elsif ($fn =~ /^[0-9][A-Z]/) {
+  #http://wwwapps.ups.com/etracking/tracking.cgi?tracknums_displayed=5&TypeOfInquiryNumber=T&HTMLVersion=4.0&InquiryNumber1=1Z31E8340348314374&InquiryNumber2=&InquiryNumber3=&InquiryNumber4=&InquiryNumber5=&track=Track
+  print "# saw ups tracking number $fn\n" if $Verbose;
+  $url = "http://wwwapps.ups.com/etracking/tracking.cgi?tracknums_displayed=5&TypeOfInquiryNumber=T&HTMLVersion=4.0&InquiryNumber1=$fn"
+} elsif ($fn !~ /^(http:|https:|file:|news:)\/.*/i) {
+  if (-f $fn) {
+    chomp($cwd = `pwd`);
+    $url = "file://$cwd/$fn";
+  } else {
+    my $q = $fn;
+    $q =~ s/\s+/\+/g;
+    $url = "http://www.google.com/search?q=$q";
+  }
+} else {
+  $url = $fn;
+}
+#print "# fn=$fn\n# url=$url\n";
+if ($url eq "") {
+  $url = $DEF_URL;
+}
+if ($nsbin =~ /mozilla/) {
+  $nsbin = qq{$nsbin -P default} unless $nsbin =~ /-P/;
+}
+$url =~ s/^\s+//;
+$url =~ s/\s+$//;
+$cmd = "$wget $url"
+  if (!defined($cmd) &&
+      ($url =~ /^(http|ftp):\/\/.*\.(tar\.gz|tgz|pdf|PDF|ps|PS|bz2|gz|Z)$/));
+#$cmd = "$nsbin '$url'"
+#  if (!defined($cmd) && ($nsbin =~ /(konqueror|kfm|links)/));
+$cmd = "$nsbin -remote 'openURL($url,$Tab)'" unless $cmd;
+#$ENV{http_proxy} = q{http://127.0.0.1:10999};
+$cmd = qq{$nsbin '$url'} unless $cmd;
+if (!defined($cmd)) {
+  print "# $opend: $url\n" if $Verbose;
+  opend($url, $opend);
+} else {
+#  $cmd =
+#    "/bin/sh -c \"$nsbin -noraise -remote 'openURL($url,new-window)'$BG\"";
+  print "# $cmd\n" if $Verbose;
+  exit 0 if $DontDoit;
+  $failed = 0;
+  system($cmd) == 0 or $failed = 1;
+  if ($failed) {
+      warn("nsopen: failed to get $url: $!\n");
+      $failed = 0;
+      system(qq{$nsbin '$url'}) == 0 or $failed = 1;
+      die("nsopen: failed with secondary command: $cmd: $!\n") if $failed;
+  }
+#  if ($failed && !($nsbin =~ /(konqueror|kfm|mozilla)/)) {
+#    system("$nsbin $url &") == 0 or
+#      die "nsopen: could not open url $url: $!\n";
+#  }
+}
+exit(0);

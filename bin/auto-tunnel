@@ -1,0 +1,23 @@
+#!/usr/bin/zsh
+#
+#H=/home/$LOGNAME
+#V=${VERBOSE-0}
+E=/bin/true
+#[ $V -gt 0 ] && {
+#  E=/bin/echo
+#}
+H=${HOME-/home/$LOGNAME}
+SHELL=${SHELL-/usr/bin/zsh}
+export HOME=$H
+export PATH=$HOME/bin:/usr/bin:/usr/sbin:/bin:/sbin:/usr/X11R6/bin:/usr/local/gimp2/bin:/usr/local/bin:/usr/local/sbin
+[ -f $H/.ssh/agent_info ] && source $H/.ssh/agent_info
+me="`/usr/bin/basename $0`"
+file=$H/lib/auto-tunnels/$me
+if [ ! -f $file ]; then
+  echo NO TUNNEL CALLED $me - $0
+  exit 1
+fi
+source $file
+NC_CMD=${NC_CMD-nc}
+$E $SHELL -c "$SSH_CMD $NC_CMD $SERVER $PORT"
+$SHELL -c "$SSH_CMD $NC_CMD $SERVER $PORT"

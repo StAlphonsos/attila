@@ -1,0 +1,36 @@
+#!/usr/bin/zsh
+#
+[ x$LOCALHOME = x ] && LOCALHOME=$HOME
+#echo '[ Prepare: LOCALHOME='$LOCALHOME' ]'
+if [ x$SSH_AGENT_PID = x -a x"$*" = "x"  ]; then
+  [ -f $LOCALHOME/.ssh/agent_info ] && source $LOCALHOME/.ssh/agent_info
+  if [ x$SSH_AGENT_PID = x ]; then
+    running=0
+  else
+    running=`ps $SSH_AGENT_PID | sed 1d | grep ssh-agent | wc -l | perl -lpe 's/[ \t]+//gs'`
+#    echo '[ Check 1: running='$running' pid '$SSH_AGENT_PID' ]'
+  fi
+else
+  if [ x"$*" = "xforce" ]; then
+    running=0
+  else
+    running=`ps $SSH_AGENT_PID | sed 1d | grep ssh-agent | wc -l | perl -lpe 's/[ \t]+//gs'`
+#    echo '[ Check 2: running='$running' ]'
+  fi
+fi 
+if [ $running = 0 ]; then
+  [ -t 0 ] && echo '[ Agent not running ]'
+  echo '[ Agent not running ]'
+  eval `ssh-agent -s`
+  [ -f $LOCALHOME/.ssh/agent_info ] && rm $LOCALHOME/.ssh/agent_info
+fi
+if [ ! -f $LOCALHOME/.ssh/agent_info ]; then
+  echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK >$LOCALHOME/.ssh/agent_info
+  echo export SSH_AUTH_SOCK >>$LOCALHOME/.ssh/agent_info
+  echo SSH_AGENT_PID=$SSH_AGENT_PID >>$LOCALHOME/.ssh/agent_info
+  echo export SSH_AGENT_PID >>$LOCALHOME/.ssh/agent_info
+fi
+need_id=`ssh-add -l | grep "no identities" | wc -l | perl -lpe 's/[ \t]+//gs'`
+if [ $need_id = 1 ]; then
+  ssh-add
+fi

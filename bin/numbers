@@ -1,0 +1,262 @@
+#!/usr/bin/perl
+#
+# numbers - manage numbers
+#
+# Copyright (C) 2002 by Sean Levy.  All Rights Reserved.
+#
+# Time-stamp: <2011-06-13 18:20:34 attila@stalphonsos.com>
+# $Id: numbers,v 1.1.1.1 2005/10/22 21:28:21 attila Exp $
+#
+# Author: Sean Levy <snl@cluefactory.com>
+#
+# Description:
+#
+# See documentation at EOF
+#
+use strict;
+use vars qw($ORIGINAL_SCRIPT $P $VERSION $VERBOSE $OPTS $USAGE $DESCR $AUTHOR
+            $COPYRIGHT $ARGS_DESC $LOG_STDERR $LOG_FILE $LOG_FP $LOG_TSTAMP_FMT
+            $DEFAULTS $ALGO $MCRYPT);
+BEGIN {
+  $ORIGINAL_SCRIPT = $0;
+  my(@P) = split("/", $0);
+  $P = pop(@P);
+  my $dir = join('/', @P);
+  unshift(@INC, $dir);
+  ## If we're being run out of a bin/ directory and there is ../lib, then
+  ## add it to @INC
+  if ($P[$#P] eq 'bin') {
+    my @tmp = @P;
+    pop(@tmp);
+    my $tmp = join("/",@tmp)."/lib";
+    unshift(@INC, $tmp) if (-d $tmp);
+    $tmp .= "/perl";
+    unshift(@INC, $tmp) if (-d $tmp);
+  }
+  my $ndir = "$dir/../lib/perl5/site_perl";
+  unshift(@INC, $ndir) if (-d $ndir);
+}
+##
+use POSIX;
+use Getopt::Std;
+##
+$DEFAULTS =
+  {
+  };
+$ALGO = 'rijndael-256';
+$MCRYPT = '/usr/local/bin/mcrypt';
+$VERSION = '0.1.0';
+$DESCR = 'manage numbers';
+$AUTHOR = 'Sean Levy <snl@hardbits.com>';
+$VERBOSE = 0;
+$OPTS = 'hvV:mTsaS:A:';
+$COPYRIGHT = '(C) 2002 by st.Alphonsos.  All Rights Reserved.';
+$ARGS_DESC = "args...";
+$LOG_STDERR = 1;
+$LOG_FILE = undef;
+$LOG_FP = undef;
+$LOG_TSTAMP_FMT = '%Y-%m-%d %H:%M:%S';
+$USAGE = <<__UsAGe__;
+  options:
+           -h    print this message and exit
+           -v    be verbose
+           -V x  set verbosity to x (-v is the same as -V 1)
+           -m    pipe output through more
+           -T    do not remove tempfile
+           -s    take input from stdin
+           -a    spew keys after saving
+           -S x  search for regexp x
+           -A x  use crypto algorithm x (def=$ALGO)
+  args...
+__UsAGe__
+##
+sub opts_str {
+  my $str = shift(@_);
+  my $dostr = "";
+  my $dvstr = "";
+  my @opts = split("", $str);
+  my $dvcol = 0;
+  my $maxdv = 30;
+  while (my $o = shift(@opts)) {
+    if ($opts[0] eq ':') {
+      shift(@opts);
+      if ($dvcol > $maxdv) {
+        $dvstr .= ("\n" . (" " x (11 + length($P))));
+        $dvcol = 11 + length($P);
+        $maxdv = 65;
+      }
+      $dvstr .= " " if length($dvstr);
+      $dvstr .= "[-$o x]";
+      $dvcol += 7;
+    } else {
+      $dostr .= "[-" unless length($dostr);
+      $dostr .= $o;
+    }
+  }
+  $dostr .= "]" if length($dostr);
+  my $dstr = $dostr;
+  $dstr .= " " if length($dstr);
+  $dstr .= $dvstr;
+  return $dstr;
+}
+##
+sub usage_section {
+  my $fh = shift(@_);
+  my $regexp = shift(@_);
+  my $title = shift(@_) || $P;
+  my $hdr_fmt = shift(@_);
+  my $in_sect = 0;
+  while (<$fh>) {
+    next unless ($in_sect || /^=head1\s+$regexp/);
+    if (/^=head1\s+$regexp/) {
+      $in_sect = 1;
+      print STDERR "\n  ","-" x 20, "[ $title ]", "-" x 20,"\n\n";
+      print STDERR sprintf($hdr_fmt, @_) if $hdr_fmt;
+      next;
+    } elsif ($in_sect && /^=cut/) {
+      last;
+    } elsif ($in_sect) {
+      print STDERR $_;
+    }
+  }
+}
+##
+sub usage {
+  my $msg = shift(@_);
+  print STDERR sprintf("%9s: %s\n", "ERROR", $msg) if $msg;
+  print STDERR sprintf("%9s: %s\n", $P, $DESCR);
+  print STDERR sprintf("%9s: %s\n", "version", $VERSION);
+  print STDERR sprintf("%9s: %s\n", "copyright", $COPYRIGHT);
+  print STDERR sprintf("%9s: %s\n", "author", $AUTHOR);
+  print STDERR sprintf("%9s: %s %s %s\n", "usage", $P, opts_str($OPTS),
+                       $ARGS_DESC);
+  print $USAGE;
+  if (scalar(@_)) {
+    my $nope = 0;
+    open(ME, "<$0") || ($nope=1);
+    unless ($nope) {
+      usage_section(\*ME, 'DESCRIPTION', '  DESCRIPTION  ');
+      usage_section(\*ME, 'VERSION',     'VERSION HISTORY',
+                    "  %-7s   %-9s   %-7s %s\n", "VERS", "WHEN",
+                    "WHO", "WHAT");
+      close(ME);
+    }
+  }
+  exit(defined($msg));
+}
+##
+sub ts {
+  my $fmt = $LOG_TSTAMP_FMT || "%Y-%m-%d %H:%M:%S";
+  return POSIX::strftime($fmt, localtime(time));
+}
+##
+sub log_msg {
+  my $lvl = shift(@_);
+  return unless $VERBOSE >= $lvl;
+  my $logmsg = "$P: " . ts() . " [$lvl] @_\n";
+  print STDERR $logmsg if $LOG_STDERR;
+  if ($LOG_FILE && !$LOG_FP) {
+    $LOG_FP = new IO::File("> $LOG_FILE")
+      or die "$P: could not create log file $LOG_FILE: $!\n";
+  }
+  print $LOG_FP $logmsg if $LOG_FP;
+}
+##
+sub spew_numbers {
+  my $opts = shift(@_);
+  my $pat = $opts->{'S'};
+  my $gpgdir = $ENV{HOME} . '/vault/gnupg';
+  my $filename = $ENV{HOME} . '/personal/numbers.txt.gpg';
+  #my $filename = $ENV{HOME} . '/personal/numbers.txt.nc';
+  my $more = '';
+  $more = q{ | more} if $opts->{m};
+  my $grep = '';
+  $grep = qq{ | grep '$pat'} if $pat;
+  my $command = qq{gpg --no-secmem-warning --homedir $gpgdir --decrypt $filename $grep $more};
+  #my $command = qq{$MCRYPT -F -a $ALGO -d < $filename $grep $more};
+  print "# spew: $command\n" if $VERBOSE;
+  system($command) == 0
+      or die "$P: failed: $!\n";
+}
+##
+sub get_numbers {
+  my $opts = shift(@_);
+  my $gpgdir = $ENV{HOME} . '/vault/gnupg';
+  my $filename = $ENV{HOME} . '/personal/numbers.txt.gpg';
+  #my $filename = $ENV{HOME} . '/personal/numbers.txt.nc';
+  my $command = qq{gpg --no-secmem-warning --homedir $gpgdir --decrypt $filename};
+  #my $command = qq{$MCRYPT -F -d -a $ALGO < $filename};
+  print "# get: $command\n" if $VERBOSE;
+  my $old = `$command`
+      or die "$P: could not get numbers: $!\n";
+  return $old;
+}
+##
+sub write_numbers {
+  my $opts = shift(@_);
+  my $content = shift(@_);
+  my $gpgdir = $ENV{HOME} . '/vault/gnupg';
+  my $filename = $ENV{HOME} . '/personal/numbers.txt.gpg';
+  #my $filename = $ENV{HOME} . '/personal/numbers.txt.nc';
+  my $backup = $filename . '.BAKUP';
+  my $tmpfile = $filename . '.TMP';
+  my $command = qq{cp $filename $backup};
+  print "# backup: $command\n" if $VERBOSE;
+  system($command) == 0
+      or die "$P: could not make backup $backup: $!\n";
+  open(TMP, "> $tmpfile")
+      or die "$P: could not create temp file $tmpfile: $!\n";
+  print TMP $content;
+  close(TMP);
+  my $command = qq{gpg --no-secmem-warning --homedir $gpgdir -o $filename -e -r vault $tmpfile};
+  #my $command = qq{$MCRYPT -F -a $ALGO < $tmpfile > $filename};
+  print "# encrypt: $command\n" if $VERBOSE;
+  system($command) == 0
+      or die "$P: could not encrypt tmp file $tmpfile: $!\n";
+  unlink($tmpfile) unless $opts->{T};
+}
+## Main Program ############################################################
+main: {
+  ## Parse CLA
+  my %opts;
+  usage() unless getopts($OPTS, \%opts);
+  usage(undef, 1) if $opts{h};
+  $VERBOSE = $opts{V} || $opts{v};
+  if (!@ARGV && !$opts{'s'}) {
+    spew_numbers(\%opts);
+  } else {
+    my $new;
+    if (@ARGV) {
+      $new = join(" ",@ARGV);
+    } elsif ($opts{'s'}) {
+      my @lines = <STDIN>;
+      $new = join("\n", @lines);
+    }
+    $new =~ s/^\s+//mg;
+    $new =~ s/\s+$//mg;
+    $new =~ s/\s+/ /mg;
+    die "$P: nothing new to add!\n" unless length($new) > 0;
+    my $old = get_numbers(\%opts);
+    $old .= "\n" unless ($old =~ /\n$/);
+    $old .= $new;
+    $old .= "\n" unless ($old =~ /\n$/);
+    write_numbers(\%opts, $old);
+    spew_numbers(\%opts) if $opts{a};
+  }
+}
+__END__
+
+=head1 DESCRIPTION
+manages my rijndael-encrypted numbers database
+=cut
+
+=head1 VERSION HISTORY
+  0.1.0   21 sep 02     snl     written
+=cut
+
+# Local variables:
+# tab-width: 2
+# perl-indent-level: 2
+# indent-tabs-mode: nil
+# comment-column: 40
+# End:

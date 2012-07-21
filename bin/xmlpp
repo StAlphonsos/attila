@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+##
+use strict;
+use XML::Twig;
+use IO::Handle;
+
+MAIN: {
+    my($fn) = @ARGV;
+    if ($fn) {
+	die("$0: no such file: $fn: $!\n") unless -f $fn;
+	XML::Twig->new(pretty_print => 'indented')->parsefile($fn)->print();
+    } else {
+	my $hand = new IO::Handle;
+	die("$0: fdopen(STDIN) failed!? $!\n")
+	    unless $hand->fdopen(fileno(STDIN),"r");
+	XML::Twig->new(pretty_print => 'indented')->parse($hand)->print();
+    }
+}

@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+#
+use POSIX;
+$D = "%a, %d %b %G %T";
+$F = $ENV{'HOME'} . "/public_html/cuts.html";
+$Q = <<__QQQQ__;
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN"><HTML>
+ <HEAD>
+  <STYLE>
+   <!--
+BODY { background: black; color: limegreen; font-family: courier new, courier }
+P { color: limegreen; font-family: courier new, courier; font-size: large }
+H1 { color: limegreen; font-family: courier new, courier; font-size: x-large; align: center }
+B { color: limegreen; font-family: courier new, courier }
+     -->
+  </STYLE>
+ </HEAD>
+ <BODY>
+  <H1>Cutbuffer history</H1>
+__QQQQ__
+$C = `xclip -o`;
+chomp($C);
+$C =~ s/\s//gs;
+print $C, "\n";
+if (defined($F) && ($C =~ /^(http|ftp):/)) {
+  $N = POSIX::strftime($D, localtime);
+  if (!(-f $F)) {
+    open(F, ">$F") || exit(0);
+    print F $Q;
+  } else {
+    open(F, ">>$F") || exit(0);
+  }
+  print F "  <P>$N: <A HREF=\"$C\">$C</A>\n";
+  close(F);
+}

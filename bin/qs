@@ -1,0 +1,9 @@
+#!/bin/sh
+echo `date`: suspending
+pm-suspend
+echo `date`: woke up
+sleep 3
+echo `date`: scanning wifi
+iwlist wlan0 scanning
+echo `date`: done
+exit 0

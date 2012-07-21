@@ -1,0 +1,125 @@
+#!/usr/bin/perl
+##
+# ts - timestamp input
+#
+# Reproduce stdin with a configurable time-stamp in front of each line
+# on stdout.  If an optional argument is given then we treat it as a
+# log file name and also reproduce our input with a time-stamp
+# appended to that file (append).
+##
+use strict;
+use warnings;
+use POSIX qw(strftime);
+use IO::File;
+use vars qw($LOG $TS_FMT $P $DAYS $PREV_DAY $DAY_TS_FMT);
+
+BEGIN {
+    $| = 1;
+    $LOG = undef;
+    $TS_FMT = $ENV{'TS_FMT'} || '%T';
+    $DAYS = 0;
+    $PREV_DAY = undef;
+    $DAY_TS_FMT = $ENV{'DAY_TS_FMT'};
+    unless (defined($DAY_TS_FMT)) {
+        if ($^O eq 'linux') {
+            $DAY_TS_FMT = '%^a %d-%^b-%Y';
+        } else {
+            $DAY_TS_FMT = '%a %d-%b-%Y';
+        }
+    }
+    ($P) = reverse(split('/',$0));
+}
+
+END {
+    if ($LOG) {
+        spew("DONE: ".daystr());
+        $LOG->close();
+    }
+}
+
+sub daystr {
+    my($t) = @_;
+    $t ||= time;
+    return strftime($DAY_TS_FMT,localtime($t));
+}
+
+sub ts {
+    my($t,$string) = @_;
+    $string ||= '';
+    my $ts = strftime($TS_FMT,localtime($t));
+    return "[$ts] $string";
+}
+
+sub spit {
+    my($string) = @_;
+    print "$string\n";
+    $LOG->print("$string\n") if $LOG;
+}
+
+sub mark_day {
+    my($t) = @_;
+    my $yday = (localtime($t))[7];
+    if (defined($PREV_DAY) && ($yday != $PREV_DAY)) {
+        spit(ts($t,"NEW DAY: ".daystr($t)));
+    }
+    $PREV_DAY = $yday;
+}
+
+sub spew {
+    my $t = time();
+    mark_day($t) if $DAYS;
+    spit(ts($t,@_));
+}
+
+sub usage {
+    my($msg) = @_;
+    warn("$P: $msg\n") if $msg;
+    warn("$P: Time-stamp input lines onto stdout\n");
+    warn("usage: $P [-help] [-days] [log-file]\n");
+    warn("   If an optional log-file is given, we append our output there\n");
+    warn("   as well as on standard output\n");
+    warn("\n");
+    warn("   If -days is specified, we output a mark when the day\n");
+    warn("   has changed since the last output\n");
+    exit($msg ? 1 : 0);
+}
+
+MAIN: {
+    if (@ARGV) {
+        my @opts = grep { /^-/ } @ARGV;
+        my @args = grep { $_ !~ /^-/ } @ARGV;
+        while (defined(my $opt = shift(@opts))) {
+            if ($opt eq '-help') {
+                usage();
+            } elsif ($opt eq '-days') {
+                $DAYS = 1;
+            } else {
+                unshift(@opts,$opt);
+                last;
+            }
+        }
+        usage("unrecognized option(s): @opts") if @opts;
+        my($lf) = @args;
+        if ($lf) {
+            $LOG = IO::File->new(">> $lf") or die("$lf: $!\n");
+            $LOG->autoflush(1);
+        }
+    }
+    $SIG{'INT'}  = sub { die("INTERRUPTED\n"); };
+    $SIG{'QUIT'} = sub { die("INTERRUPTED\n"); };
+    spew("STARTED: ".daystr()) if $LOG;
+    while (defined(my $line = <STDIN>)) {
+        chomp($line);
+        spew($line);
+    }
+}
+
+##
+# Local variables:
+# tab-width: 4
+# perl-indent-level: 4
+# cperl-indent-level: 4
+# indent-tabs-mode: nil
+# comment-column: 40
+# End:
+##

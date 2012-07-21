@@ -1,0 +1,60 @@
+export PATH=$HOME/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/usr/local/apache/bin:/usr/X11R6/bin:/usr/X11R6/sbin:/bin:/sbin:/usr/games
+export SURFRAW_browser=w3m
+export CVS_RSH=ssh
+export EDITOR=`which zile`
+export CVSEDITOR=$EDITOR
+export BROWSER=firefox
+export NODENAME=`uname -n`
+#export SSH_ASKPASS=/usr/X11R6/bin/ssh-askpass
+#export PKGS=ftp://openbsd.mirrors.pair.com/`uname -r`/packages/i386
+export FTPMODE=passive
+#export MOZLOCK=${MOZLOCK-$HOME/.mozilla/default/0pe7s963.slt/lock}
+#export TROY_BASE=$HOME/consulting/troy
+#export OTX_BASE=$TROY_BASE/svn/OTX
+#export OTX_LEGACY=$OTX_BASE/Legacy/cgi
+#export PERL5LIB=$HOME/lib/perl:$HOME/libdata/perl5:$HOME/libdata/perl5/site_perl
+#export LEFTYPATH=/usr/local/share/examples/graphviz/lefty
+#export DW6K_STATUS_URL=http://192.168.0.1/stats/summary/summary.html
+#export QT_XFT=true
+export K2_WEB_ROOT=/usr/local/apache/vhosts/k2
+export LOCALPYTHONPATH=/var/www-vhosts/localhost.kwantera.com/build/pymodbus
+
+suss_editor () {
+  _editor=${EDITOR}
+  _emacsclient="`which emacsclient`"
+  if [ x"${_emacsclient}" = x ]; then
+    _editor=${DEFAULT_EDITOR-/bin/ed}
+  else
+    if [ x"${DISPLAY}" != x ]; then
+      _editor="${_emacsclient} -c"
+    else
+      _editor="${_emacsclient} -nw"
+    fi
+  fi
+  EDITOR=${_editor}
+  export EDITOR
+  [ x"$1" = "x-v" ] && echo '[EDITOR: '$EDITOR']'
+}
+
+suss_editor
+
+## limits
+ulimit -f unlimited
+ulimit -d unlimited
+ulimit -s unlimited
+ulimit -m unlimited
+ulimit -l unlimited
+ulimit -u unlimited
+ulimit -n unlimited
+
+function delimit () {
+  ulimit -f unlimited
+  ulimit -d unlimited
+  ulimit -s unlimited
+  ulimit -m unlimited
+  ulimit -l unlimited
+  ulimit -u unlimited
+  ulimit -n unlimited
+  ulimit -a
+}
+export QUEX_PATH=/home/attila/src/quex-0.60.2

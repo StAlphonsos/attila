@@ -1,0 +1,120 @@
+#!/usr/bin/perl
+#
+# my_ip - find my ip address(es) and produce them in an easily parseable way
+#
+# copyright 2002 by attila <attila@stalphonsos.com>. all rights reserved, man.
+#
+# this silly little hack comes in surprisingly handy sometimes.  i usually
+# install it in ~/bin
+#
+##
+use strict;
+use Getopt::Std;
+##
+sub tack {
+  my $str = shift(@_);
+  my $rest = join("", @_);
+  return $str unless $rest;
+  $str = '' unless $str;
+  $str .= " " if length($str);
+  $str .= $rest;
+  return $str;
+}
+##
+sub ME { my @p = split('/', $0); return pop(@p); }
+my %opts;
+chomp(my $systype =`uname`);
+my $ifconfig = q{/sbin/ifconfig};
+$ifconfig = q{/usr/sbin/ifconfig}	unless -x $ifconfig;
+$ifconfig = q{/bin/ifconfig}		unless -x $ifconfig;
+$ifconfig = q{/usr/bin/ifconfig}	unless -x $ifconfig;
+die "usage: ",ME," [-virahn] [-I ifconfig_prog]\n"
+  unless getopts('viranI:hwWA', \%opts);
+if ($opts{h}) {
+  print ME, ": print my ip address(es)\n";
+  print "usage: ",ME," [-virahn] [-I ifconfig_prog]\n";
+  print "        -v verbose        -i ipaddr only           -r reverse dns\n";
+  print "        -W wired only     -w wireless only         -A all but loopback\n";
+  print "        -a all interfaces -n interface names only\n";
+  print "        -I use argument for path to ifconfig\n";
+  exit(0);
+}
+$ifconfig = $opts{I} if defined $opts{I};
+die ME, ": ifconfig program $ifconfig is not executable\n" unless -x $ifconfig;
+$ifconfig .= q{ -a} if $systype eq 'OpenBSD' || $systype eq 'NetBSD';
+my %INTERFACES;
+my $VERBOSE = $opts{v};
+print STDERR "ifconfig: $ifconfig\n"				if $VERBOSE;
+open(IFCONFIG,"$ifconfig|") || die "$ifconfig: $!\n";
+while (<IFCONFIG>) {
+  my $is_up = 0;
+  next unless /^([^:\s]+)[:\s]/;
+  my $ifname = $1;
+  if (/BROADCAST|RUNNING|MULTICAST/) {
+    if (/UP/) {
+      $is_up = 1;
+    }
+  }
+ IFNAME:
+  next if $ifname =~ /^lo/ && !$opts{a};
+  print STDERR "ifname: $ifname\n"				if $VERBOSE;
+  while (<IFCONFIG>) {
+    last if /^([^:\s]+)[:\s]/;
+    print STDERR "$ifname: $_"                                  if $VERBOSE;
+    if (/BROADCAST|MULTICAST|RUNNING/) {
+      if (/UP/) {
+        $is_up = 1;
+      }
+    }
+    if (/\s+inet\s+(\S+)\s/) {
+      my $ip = $1;
+      $ip = $1 if $ip =~ /^addr:(.*)$/;
+      print STDERR "$ifname: ip=$ip\n"				if $VERBOSE;
+      $INTERFACES{$ifname} = $ip;
+    }
+  }
+  delete $INTERFACES{$ifname} unless $is_up || $opts{a};
+  $is_up = 0;
+  if (/^([^:\s]+)[:\s]/) {
+    $ifname = $1;
+    if (/BROADCAST|RUNNING|MULTICAST/) {
+      if (/UP/) {
+        $is_up = 1;
+      }
+    }
+    goto IFNAME;
+  }
+}
+close(IFCONFIG);
+foreach my $if (keys %INTERFACES) {
+  unless ($opts{a}) {
+    next if $if =~ /^vmnet/;
+    next if $if =~ /^lo/;
+  }
+  next if $if =~ /^lo/ && $opts{A};
+  if ($opts{'W'}) {
+      next if $if =~ /^(an|ath|atu|atw|awi|ipw|iwi|ral|ray|rln|rtw|wi|lo)\d+$/;
+  }
+  if ($opts{'w'}) {
+      next if $if !~ /^(an|ath|atu|atw|awi|ipw|iwi|ral|ray|rln|rtw|wi|lo)\d+$/;
+  }
+  my $str = '';
+  $str = tack($str, $if) unless $opts{i};
+  $str = tack($str, $INTERFACES{$if}) unless $opts{n};
+  if ($opts{r}) {
+    my $ip = $INTERFACES{$if};
+    my $rev;
+    open(HOST,"host $ip 2>/dev/null|") || ($rev = '?');
+    unless ($rev) {
+      while (<HOST>) {
+	next unless /^name:\s+(\S+)$/i;
+	$rev = $1;
+	last;
+      }
+      close(HOST);
+      $rev = '?' unless $rev;
+    }
+    $str = tack($str, $rev);
+  }
+  print "$str\n" if $str;
+}

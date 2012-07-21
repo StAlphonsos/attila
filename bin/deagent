@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+[ x$LOCALHOME = x ] && LOCALHOME=/home/attila
+if [ x$SSH_AGENT_PID != x ]; then
+  echo '[ Cleaning up agent pid '$SSH_AGENT_PID' ]'
+  kill $SSH_AGENT_PID
+  /bin/rm -f $LOCALHOME/.ssh/agent_info
+fi

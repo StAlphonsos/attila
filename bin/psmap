@@ -1,0 +1,255 @@
+#!/usr/bin/perl
+#
+# psmap - map a command over ps output
+#
+# Copyright (C) 2002 by attila <attila@stalphonsos.com>
+#
+# Time-stamp: <2008-07-09 12:38:28 attila@stalphonsos.com>
+# $Id: psmap,v 1.1.1.1 2005/10/22 21:28:18 attila Exp $
+#
+# Author: attila <attila@stalphonsos.com>
+#
+# Description:
+#
+# Map a command over pids based on ps output.  A generalization
+# of the stupid Linux "killall" command.  Example:
+#
+# Kill all processes with the name "agent" in their command,
+# regardless of case:
+#
+#    $ psmap -i agent kill
+#
+# Print the PIDs of all processes with "perl" in their name:
+#
+#    $ psmap perl echo
+#
+use strict;
+use vars qw($ORIGINAL_SCRIPT $P $VERSION $VERBOSE $OPTS $USAGE $DESCR $AUTHOR
+            $COPYRIGHT $ARGS_DESC $LOG_STDERR $LOG_FILE $LOG_FP $LOG_TSTAMP_FMT
+            $DEFAULTS);
+BEGIN {
+  $ORIGINAL_SCRIPT = $0;
+  my(@P) = split("/", $0);
+  $P = pop(@P);
+  my $dir = join('/', @P);
+  unshift(@INC, $dir);
+  ## If we're being run out of a bin/ directory and there is ../lib, then
+  ## add it to @INC
+  if ($P[$#P] eq 'bin') {
+    my @tmp = @P;
+    pop(@tmp);
+    my $tmp = join("/",@tmp)."/lib";
+    unshift(@INC, $tmp) if (-d $tmp);
+    $tmp .= "/perl";
+    unshift(@INC, $tmp) if (-d $tmp);
+  }
+  my $ndir = "$dir/../lib/perl5/site_perl";
+  unshift(@INC, $ndir) if (-d $ndir);
+}
+##
+use POSIX;
+use Getopt::Std;
+##
+$DEFAULTS =
+  { ps => '/bin/ps',
+    ps_args => 'auxwww'
+  };
+$VERSION = '0.1.0';
+$DESCR = 'map a command over ps output';
+$AUTHOR = 'attila <attila@stalphonsos.com>';
+$VERBOSE = 0;
+$OPTS = 'hvV:inp:a:s:d:';
+$COPYRIGHT =
+    '(C) 2002-2004 attila <attila@stalphonsos.com>.  all rights reserved.';
+$ARGS_DESC = "pat cmd";
+$LOG_STDERR = 1;
+$LOG_FILE = undef;
+$LOG_FP = undef;
+$LOG_TSTAMP_FMT = '%Y-%m-%d %H:%M:%S';
+$USAGE = <<__UsAGe__;
+  options:
+           -h    print this message and exit
+           -v    be verbose
+           -V x  set verbosity to x (-v is the same as -V 1)
+           -n    do not run anything, just print what we would do
+           -i    match pattern without regard to case
+           -p x  use x as the full path to the ps program (def=/bin/ps)
+           -a x  use x as args to ps (def=auxwww)
+           -s x  sleep x seconds and loop
+           -d x  dribble output to x (only make sense with -s)
+  args...
+           pat   the pattern to search for; enclose in quotes if multi-word
+           cmd...the command to execute on each pid that matches
+__UsAGe__
+##
+sub opts_str {
+  my $str = shift(@_);
+  my $dostr = "";
+  my $dvstr = "";
+  my @opts = split("", $str);
+  my $dvcol = 0;
+  my $maxdv = 30;
+  while (my $o = shift(@opts)) {
+    if ($opts[0] eq ':') {
+      shift(@opts);
+      if ($dvcol > $maxdv) {
+        $dvstr .= ("\n" . (" " x 11));
+        $dvcol = 11;
+        $maxdv = 60;
+      }
+      $dvstr .= " " if length($dvstr);
+      $dvstr .= "[-$o x]";
+      $dvcol += 7;
+    } else {
+      $dostr .= "[-" unless length($dostr);
+      $dostr .= $o;
+    }
+  }
+  $dostr .= "]" if length($dostr);
+  my $dstr = $dostr;
+  $dstr .= " " if length($dstr);
+  $dstr .= $dvstr;
+  return $dstr;
+}
+##
+sub usage {
+  my $msg = shift(@_);
+  print STDERR sprintf("%9s: %s\n", "ERROR", $msg) if $msg;
+  print STDERR sprintf("%9s: %s\n", $P, $DESCR);
+  print STDERR sprintf("%9s: %s\n", "Version", $VERSION);
+  print STDERR sprintf("%9s: %s\n", "Copyright", $COPYRIGHT);
+  print STDERR sprintf("%9s: %s\n", "Author", $AUTHOR);
+  print STDERR sprintf("%9s: %s %s %s\n", "usage", $P, opts_str($OPTS),
+                       $ARGS_DESC);
+  print $USAGE;
+  if (scalar(@_)) {
+    my $nope = 0;
+    open(ME, "<$0") || ($nope=1);
+    unless ($nope) {
+      my $in_history = 0;
+      while (<ME>) {
+        next unless ($in_history || /^=head1\s+VERSION/);
+        if (/^=head1\s+VERSION/) {
+          $in_history = 1;
+          print STDERR "\n  ","-" x 20, "[ VERSION HISTORY ]", "-" x 20,"\n\n";
+          print STDERR sprintf("  %-7s   %-9s   %-7s %s\n",
+                               "VERS","WHEN","WHO","WHAT");
+          next;
+        } elsif ($in_history && /^=cut/) {
+          last;
+        } elsif ($in_history && ($_ !~ /^\s*$/)) {
+          print STDERR $_;
+        }
+      }
+      close(ME);
+    }
+  }
+  exit(defined($msg));
+}
+##
+sub ts {
+  my $fmt = shift(@_) || $LOG_TSTAMP_FMT;
+  return POSIX::strftime($fmt, localtime(time));
+}
+##
+sub log_msg {
+  my $lvl = shift(@_);
+  return unless $VERBOSE >= $lvl;
+  my $logmsg = "$P: " . ts() . " [$lvl] @_\n";
+  print STDERR $logmsg if $LOG_STDERR;
+  if ($LOG_FILE && !$LOG_FP) {
+    $LOG_FP = new IO::File("> $LOG_FILE")
+      or die "$P: could not create log file $LOG_FILE: $!\n";
+  }
+  print $LOG_FP $logmsg if $LOG_FP;
+}
+##
+sub print_proc {
+  my $opts = shift(@_);
+  my $owner = shift(@_);
+  my $pid = shift(@_);
+  my $junk = shift(@_);                 # %CPU
+  $junk = shift(@_);                    # %MEM
+  my $vsz = shift(@_);
+  my $rss = shift(@_);
+  my $tty = shift(@_);
+  my $status = shift(@_);
+  my $started = shift(@_);
+  my $time = shift(@_);
+  my $cmd = join(" ", @_);
+  $cmd =~ s,^(/usr/bin/|/usr/local/bin/|/usr/sbin/|/usr/local/sbin/|/bin/|/sbin/),,;
+  $cmd =~ s,^perl\s+-I.\s+,,;
+  $cmd =~ s,^perl\s+,,;
+  $cmd =~ s,^(/usr/bin/|/usr/local/bin/|/usr/sbin/|/usr/local/sbin/|/bin/|/sbin/),,;
+  my $str = '';
+  $str .= '['.ts("%H:%M:%S").'] ' if $opts->{s};
+  $str .= sprintf(qq{%-8s %-8d %06d/%06d %-8s %.39s\n},
+                    $owner, $pid, $vsz, $rss, $status, $cmd);
+  print $str;
+  print DRIBBLE $str if $opts->{d};
+}
+## Main Program ############################################################
+main: {
+  ## Parse CLA
+  my %opts;
+  usage() unless getopts($OPTS, \%opts);
+  usage(undef, 1) if $opts{h};
+  usage() unless scalar(@ARGV);
+  $VERBOSE = $opts{V} || $opts{v};
+  my $pat = shift(@ARGV);
+  usage('missing argument: command') unless $opts{n} || scalar(@ARGV);
+  my $cmd = join(" ", @ARGV);
+  my $pspath = $opts{p} || $DEFAULTS->{ps};
+  my $psargs = $opts{a} || $DEFAULTS->{ps_args};
+  my $nfound = 0;
+  if ($opts{d}) {
+    my $fn = $opts{d};
+    open(DRIBBLE,">> $fn") or die("$P: dribble file $fn: $!\n");
+    print DRIBBLE "[".ts()."] STARTED\n";
+    $SIG{INT} = sub {
+        print DRIBBLE "[".ts()."] INTERRUPTED\n";
+        close(DRIBBLE);
+        exit(0);
+    };
+  }
+ RE:
+  open(PS, "$pspath $psargs|") or die "$P: could not fork $pspath $psargs: $!\n";
+  while (<PS>) {
+    chomp(my $line = $_);
+    if ($opts{i}) {
+      next unless $line =~ /$pat/i;
+    } else {
+      next unless $line =~ /$pat/;
+    }
+    my @fields = split(/\s+/, $line);
+    my $pid = $fields[1];
+    next if ($pid == $$);
+    ++$nfound;
+    print_proc(\%opts,@fields) if ($VERBOSE > 1) || ($VERBOSE && $opts{n});
+    my $pcmd = qq{$cmd $pid};
+    print qq{$P: $pcmd\n} if ($opts{n} || $VERBOSE) && (length($cmd) > 0);
+    next if $opts{n};
+    system($pcmd) == 0
+      or print qq{$P: command error for "$cmd": $@\n};
+  }
+  close(PS);
+  if (defined($opts{s}) && ($opts{s} > 0)) {
+    sleep($opts{s});
+    goto RE;
+  }
+  exit($nfound ? 0 : 1);
+}
+__END__
+
+=head1 VERSION HISTORY
+
+  0.1.0   08 Oct 02     attila  written
+
+=cut
+
+# Local variables:
+# tab-width: 2
+# perl-indent-level: 2
+# indent-tabs-mode: nil
+# comment-column: 40
+# End:

@@ -1,0 +1,5 @@
+# -*- mode:org; indent-tabs-mode:nil; tab-width:2 -*-
+
+This is an ORG-MODE file.  Lines that begin with stars (*) are headings.
+Hit TAB on a line that begins with a star to expand it and collapse it.
+

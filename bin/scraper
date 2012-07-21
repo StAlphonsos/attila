@@ -1,0 +1,929 @@
+#!/usr/bin/perl
+##
+# scraper - scrape info from simple text pages
+#
+# (C) 1997-2006 by attila <attila@stalphonsos.com>.  all rights reserved.
+#
+# Time-stamp: <2006-01-24 09:01:33 attila@stalphonsos.com>
+# $Id: scraper,v 1.2 2006/02/01 16:50:29 attila Exp $
+#
+# author: attila <attila@stalphonsos.com>
+#
+# See POD at EOF, or invoke with -help -verbose
+##
+use strict;
+use vars qw(
+    $P $VERSION $VERBOSE $QUIET $DEFAULTS $COPY_YEARS
+    $HAVE_IMAGER $HAVE_IMAGER_PLOT %MIMES $INTERRUPTED
+);
+use POSIX qw(strftime ceil mktime);
+use Pod::Usage;
+use IO::Handle;
+use IO::File;
+use LWP::UserAgent;
+use HTTP::Request;
+use HTTP::Response;
+use Time::Local;
+
+BEGIN {
+    ($P) = reverse(split('/', $0));
+    $COPY_YEARS = sprintf(qq{1997-%d},1900+(localtime(time))[5]);
+    $HAVE_IMAGER = 0;
+    eval { require Imager; $HAVE_IMAGER = 1; };
+    $HAVE_IMAGER_PLOT= 0;
+    eval { require Imager::Plot; $HAVE_IMAGER_PLOT = 1; };
+    Imager::Font->priorities(qw(w32 ft2 tt t1)) if $HAVE_IMAGER;
+    $INTERRUPTED = 0;
+}
+
+%MIMES = (
+    'pnm' => 'image/x-portable-anymap',
+    'ppm' => 'image/x-portable-pixmap',
+);
+$DEFAULTS = {
+    'method' => 'GET',
+    ## This default is for scraping the signal strength from
+    ## a DirecWay DW6k satellite modem
+    'pattern' => {
+        'SignalStrength' => 'Signal\sStrength\.+\s(\d+)\s',
+    },
+    'ts-fmt' => qq{%Y-%m-%d %H:%M:%S},
+    'sleep' => 30,
+    'user-agent' => 'HairyPlotter/0.1.1',
+    'plot-font-dir' => $ENV{'HOME'} . '/lib',
+    'plot-file-ts-fmt' => '%Y%m%d%H%M%S',
+    'plot-bar-width' => 3,
+    'plot-width' => 700,
+    'plot-height' => 350,
+    'plot-xaxis-title' => 'seconds since first sample',
+    'plot-x-margin' => 50,
+    'plot-y-margin' => 50,
+    'plot-x-offset' => 40,
+    'plot-y-offset' => 370,
+    'image-viewer' => 'xv',
+};
+$VERSION = '0.1.2';
+$QUIET = 0;
+
+## qchomp - trim leading and trailing whitespace and deal with quoted strings
+##
+sub qchomp {
+    my $str = shift(@_);
+    while ($str =~ /^\s*([\"\'])(.*)\1\s*$/) {
+        $str = $2;
+    }
+    $str =~ s/^\s+//;
+    $str =~ s/\s+$//;
+    return $str;
+}
+
+## parse_argv - simplistic and effective CLA parser
+##
+sub parse_argv {
+    my $args;
+    if (@_ && (ref($_[0]) eq 'HASH')) {
+        $args = shift(@_);
+    } else {
+        $args = {};
+    }
+    my @argv = @_;
+    foreach my $arg (@argv) {
+        $arg =~ s/^\s+//;
+        $arg =~ s/\s+$//;
+        next unless length $arg;
+        if ($arg =~ /^(-{1,2}[^=]+?)[=](.*)$/) {
+            my($k,$v) = ($1,qchomp($2));
+            $k =~ s/^-+//;
+            if ($k ne '_') {
+                if (!exists($args->{$k}) || (ref($args->{$k}) !~ /^(ARRAY|HASH)$/)) {
+                    $args->{$k} = $v;
+                } elsif (ref($args->{$k}) eq 'HASH') {
+                    my($kk,$vv) = split(/:/,$v,2);
+                    $args->{$k}->{$kk} = $vv;
+                    $args->{" $k order"} ||= [];
+                    push(@{$args->{" $k order"}}, $kk);
+                } else {
+                    push(@{$args->{$k}}, $v);
+                }
+            } else {
+                $args->{$k} = [] unless defined $args->{$k};
+                push(@{$args->{$k}}, $v);
+            }
+        } elsif ($arg =~ /^(-{1,2}.*)$/) {
+            my $k = qchomp($1);
+            $k =~ s/^-+//;
+            if ($k ne '_') {
+                ++$args->{$k};
+            } else {
+                usage(qq{Cannot have an option named underscore});
+            }
+        } else {
+            $args->{'_'} = [] unless defined $args->{'_'};
+            push(@{$args->{'_'}}, $arg);
+        }
+    }
+    ## Shortcuts: -v = -verbose, -V = -verbosity, -n = noexec
+    $args->{'verbose'} = $args->{'v'}
+        if (defined($args->{'v'}) && !defined($args->{'verbose'}));
+    $args->{'verbosity'} = $args->{'V'}
+        if (defined($args->{'V'}) && !defined($args->{'verbosity'}));
+    $args->{'quiet'} = $args->{'q'}
+        if (defined($args->{'q'}) && !defined($args->{'quiet'}));
+    ## set an order key for pattern, after applying defaults
+    unless (scalar(keys(%{$args->{'pattern'}}))) {
+        $args->{' pattern order'} = [];
+        foreach my $key (sort { $a cmp $b } keys %{$DEFAULTS->{'pattern'}}) {
+            $args->{'pattern'}->{$key} = $DEFAULTS->{'pattern'}->{$key};
+            push(@{$args->{' pattern order'}}, $key);
+        }
+    }
+    return $args;
+}
+
+## usage - dump a usage message and die
+##
+sub usage {
+    my($msg) = @_;
+    pod2usage(-verbose => 2)                    if $VERBOSE && !defined($msg);
+    if (defined($msg)) {
+        print STDERR "$P: $msg\n"               if defined $msg;
+    } else {
+        print STDERR "$P: scrape data from simple text web pages\n";
+    }
+    print STDERR "usage: $P [-options] url\n";
+    print STDERR "       Standard options:\n";
+    print STDERR "          -v|verbose      increment verbosity level\n";
+    print STDERR "          -V|verbosity=n  set verbosity level to n\n";
+    print STDERR "          -q|quiet        suppress all output save errors\n\n";
+    print STDERR "          -help           print this brief message\n";
+    print STDERR "          -copyright      print our version and copyright\n";
+    print STDERR "          -license        print our modified BSD license\n\n";
+    print STDERR "       To see the full documentation, try:\n\n";
+    print STDERR "           \$ $P -help -verbose\n";
+    exit(defined($msg)? 1:0);
+}
+
+## mumble - interstitial, random messages that should go somewhere
+##
+sub mumble {
+    my($lvl,$msg) = @_;
+    return unless $lvl <= $VERBOSE;
+    print STDERR "[$P($lvl) $msg]\n";
+}
+
+## ts - return formatted timestamp
+##
+sub ts {
+    my $when = shift(@_) || ceil(time());
+    my $fmt = shift(@_) || "%Y-%m-%d %H:%M:%S";
+    return strftime($fmt, localtime($when));
+}
+
+## copyright - print our version and copyright
+##
+sub copyright {
+    print "$P version $VERSION\n";
+    print "Copyright (C) $COPY_YEARS by attila <attila\@stalphonsos.com>.\n";
+    print "All Rights Reserved.\n\n";
+    print "This program is distributed under a BSD-style license; try\n";
+    print "    \$ $P -license\n";
+    print "to see the whole thing.  Be a good Netizen, support your local BSD Unix!\n";
+    exit(0);
+}
+
+## license - print our modified BSD license
+##
+sub license {
+    print <<__LiCENsE__;
+$P version $VERSION
+Copyright (C) $COPY_YEARS by attila <attila\@stalphonsos.com>.
+All rights Reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   1. Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+   3. Neither the name of the St.Alphonsos nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission. 
+
+THIS SOFTWARE IS PROVIDED BY ST.ALPHONSOS AND CONTRIBUTORS ``AS IS''
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL ST.ALPHONSOS OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+__LiCENsE__
+    exit(0);
+}
+
+## create_ua - initialize LWP::UserAgent object
+##
+sub create_ua {
+    my($argv) = @_;
+    my $uaname = $argv->{'user-agent'} || $DEFAULTS->{'user-agent'};
+    my $ua = LWP::UserAgent->new();
+    $ua->agent($uaname);
+    return $ua;
+}
+
+## spew - produce output
+##
+sub spew {
+    my($argv,$msg) = @_;
+    my $fh = $argv->{' outhandle'};
+    unless (defined($fh)) {
+        if (defined(my $outf = $argv->{'output'})) {
+            if ($argv->{'append'}) {
+                $fh = IO::File->new(">> $outf");
+            } else {
+                $fh = IO::File->new("> $outf");
+            }
+            $argv->{' closehandle'} = 1;
+        } else {
+            $fh = IO::Handle->new();
+            $fh->fdopen(fileno(STDOUT), "w");
+            $argv->{' closehandle'} = 0;
+        }
+        die(qq{$P: could not set up output stream: $!\n})
+            unless defined $fh;
+        $argv->{' outhandle'} = $fh;
+    }
+    my $is_noise = ($msg =~ /^(==|\*\*|\#)\s/) ? 1 : 0;
+    $fh->print($msg) unless $is_noise;
+    if ($is_noise || (defined($argv->{'output'}) && $argv->{'dup-to-stdout'})) {
+        print "$msg";
+    }
+    if ($argv->{'append'} && $argv->{'reopen'} && $argv->{' closehandle'}) {
+        $fh->close();
+        delete $argv->{' outhandle'};
+    }
+}
+
+## report_error - produce readable error
+##
+sub report_error {
+    my($argv,$response) = @_;
+    unless ($argv->{'quiet'}) {
+        spew($argv, qq{** HTTP error grabbing }.$argv->{'_'}->[0].qq{\n**    }.$response->status_line."\n");
+    }
+    exit(1) unless $argv->{'ignore-errors'};
+}
+
+## scrape - scrape information from a URL
+##
+sub scrape {
+    my($argv,$ua,$method,$url) = @_;
+    my $req = HTTP::Request->new($method => $url);
+    my $response = $ua->request($req);
+    if (!$response->is_success) {
+        report_error($argv,$response);
+    } else {
+        my $tsfmt = $argv->{'ts-fmt'} || $DEFAULTS->{'ts-fmt'};
+        my $now_t = time;
+        my $now = strftime($tsfmt,localtime($now_t));
+        spew($argv, "== Raw response ==\n\n".$response->content."\n\n====================\n")
+            if $VERBOSE > 2;
+        my @lines = split(/[\r\n]+/, $response->content);
+        my $pats = $argv->{'pattern'};
+        my @keys = keys %$pats;
+        spew($argv, "== searching for: @keys\n") if $VERBOSE > 2;
+        my $info = {};
+        foreach my $line (@lines) {
+            spew($argv, "== $line\n") if $VERBOSE > 1;
+            foreach my $key (@keys) {
+                my $pat = $pats->{$key};
+                if ($line =~ /$pat/) {
+                    $info->{$key} = $1;
+                    spew($argv, "*** set $key: ".$info->{$key}."\n") if $VERBOSE > 1;
+                }
+            }
+        }
+        if (defined(my $data = $argv->{' data'})) {
+            $data->{$now_t} = $info;
+        }
+        my @order = sort { $a cmp $b } keys %$info;
+        @order = @{$argv->{' pattern order'}}
+            if defined($argv->{' pattern order'});
+        foreach my $ikey (@order) {
+            spew($argv,"$now|$ikey|".$info->{$ikey}."\n");
+        }
+    }
+}
+
+## font_file - turn a font file name into a full path
+##
+sub font_file_path {
+    my($argv,$filename) = @_;
+    my $dir = $argv->{'plot-font-dir'} || $DEFAULTS->{'plot-font-dir'};
+    my $fn = qq{$dir/$filename};
+    return (-f $fn)? $fn: undef;
+}
+
+## get_font - return an Imager::Font object to use in the plot
+##
+sub get_font {
+    my($argv) = @_;
+    my %opts = (size=>12, color=>Imager::Color->new('black'));
+    my $file = font_file_path($argv,$argv->{'plot-font-file'})
+        if exists $argv->{'plot-font-file'};
+    $file  ||= font_file_path($argv,'ImUgly.ttf');
+    $file  ||= font_file($argv,'dcr10.pfb');
+    die(qq{$P: could not find any font files\n}) unless defined $file;
+    my $font = Imager::Font->new(file=>$file, %opts);
+    die "$P: Couldn't load any font!\n" unless defined $font;
+    return $font;
+}
+
+## tformat - format timestamps for the X axis
+##
+sub tformat {
+    my($argv,$t) = @_;
+    if (!exists($argv->{' t0'})) {
+        $argv->{' t0'} = $t;
+    }
+    my $t0 = $argv->{' t0'};
+    my $dt = $t - $t0;
+    return ($dt >= 0) ? sprintf(q{+%d},$dt) : sprintf(q{%d},$dt);
+}
+
+## bar_style - callback to draw the bars in the graph
+##
+## stolen shamelessly from sample7.pl in the Imager::Plot distro
+##
+sub bar_style {
+    my ($argv, $DataSet, $xr, $yr, $Xmapper, $Ymapper, $img, $opts) = @_;
+    my $w = $argv->{'plot-bar-width'} || $DEFAULTS->{'plot-bar-width'};
+    my $plot = $argv->{' plot'};
+
+    my @x = @$xr;
+    my @y = @$yr;
+    my $Axis = $plot->GetAxis();
+    my $bottom = ($Ymapper->($Axis->{YRANGE}->[0]))[0];
+
+    for (0..$#x) {
+        $img->box(color=>'blue', xmin=>$x[$_]-$w, xmax=>$x[$_]+$w, ymin=>$y[$_], ymax=>$bottom, filled=>1);
+        $img->box(color=>'black', xmin=>$x[$_]-$w, xmax=>$x[$_]+$w, ymin=>$y[$_], ymax=>$bottom, filled=>0);
+    }
+}
+
+## parse_ts - parse a time stamp in any of three formats
+##
+sub parse_ts {
+    my($time) = @_;
+    my $t = undef;
+    if (defined($time)) {
+        if ($time =~ /^\d+$/) {         # time_t
+            $t = $time;
+        } elsif ($time =~               # Sun Apr 21 09:03:36 2002
+            /^(\w{3})\s(\w{3})\s(\d{2})\s(\d{2}):(\d{2}):(\d{2})\s(\d{4})$/) {
+            my($wday,$mon,$mday,$hh,$mm,$ss,$yyyy) = ($1,$2,$3,$4,$5,$6,$7);
+            $t = mktime($ss,$mm,$hh,$mday,month_number($mon),$yyyy-1900);
+        } elsif ($time =~               # 2005-02-05 07:28:33-06
+                 /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/) {
+            my($yyyy,$mm,$dd,$hh,$MM,$ss) = ($1,$2,$3,$4,$5,$6);
+            $t = mktime($ss,$MM,$hh,$dd,$mm-1,$yyyy-1900);
+        }
+    }
+    return $t;
+}
+
+## time_range - given two times, return a readable description of the range
+##
+sub time_range {
+    my($from_t,$to_t) = @_;
+    my $str;
+    if (!defined($from_t)) {
+        $str = '';
+    } elsif (!defined($to_t) || ($from_t == $to_t)) {
+        $str = ' at '.strftime(qq{%m-%d @ %H:%M:%S},localtime($from_t));
+    } else {
+        my @from_l = localtime($from_t);
+        my @to_l = localtime($to_t);
+        my $fmt = qq{%m-%d @ %H:%M:%S};
+        $str = '';
+        if ($from_l[7] == $to_l[7]) {
+            $fmt = q{%H:%M:%S};
+            $str = ' on '.strftime(qq{%m-%d},@from_l);
+        }
+        $str .= ' from '.strftime($fmt,@from_l).' to '.strftime($fmt,@to_l);
+    }
+    return $str;
+}
+
+## stupid_stats - calculate the min, max and average values in our data
+##
+sub stupid_stats {
+    my($points) = @_;
+    my @range = sort { $a <=> $b } map { $_->[1] } @$points;
+    my($min) = @range;
+    $min ||= 0.0;
+    my($max) = $range[$#range];
+    my $avg = "n/a";
+    if (@$points > 1) {
+        my $avg_n = 0;
+        foreach my $pt (@$points) {
+            $avg_n += $pt->[1];
+        }
+        $avg_n /= scalar(@$points);
+        $avg = sprintf(q{%.1f}, $avg_n);
+    }
+    return($min,$max,$avg);
+}
+
+## create_plot - create an Imager object with the plot
+##
+sub create_plot {
+    my($argv) = @_;
+    delete $argv->{' t0'};
+    my $plotkey = $argv->{'plot-key'};
+#+D     print STDERR "# argv keys: ".join(", ", map { qq{|$_|} } sort { $a cmp $b } keys(%$argv))."\n" if $VERBOSE; #+D
+    ($plotkey) = @{$argv->{' pattern order'}} unless defined $plotkey;
+    spew($argv,"== plotkey=$plotkey\n") if $VERBOSE;
+    my $data = $argv->{' data'};
+    my $points = [ map { [$_, $data->{$_}->{$plotkey} ] } sort { $a <=> $b } keys(%$data) ];
+    return undef unless @$points > 2; ## Imager::Plot has real issues otherwise...
+    my $title = $argv->{'plot-title'};
+    if (!defined($title)) {
+        if (!@$points) {
+            $title = qq{$plotkey: no data};
+        } else {
+            $title = $plotkey .
+                time_range($points->[0]->[0],$points->[scalar(@$points)-1]->[0]);
+        }
+        my($min,$max,$avg) = stupid_stats($points);
+        $title .= ": " . scalar(@$points). " samples; min=$min, max=$max, avg=$avg";
+    }
+    spew($argv,"== plotting ".scalar(@$points)." points\n") if $VERBOSE;
+    my %args = ( 'XY' => $points );
+    $args{'style'} = {
+        'code' => {
+            'ref' => sub { bar_style($argv,@_); },
+            'opts' => undef,
+        }
+    } if $argv->{'plot-style'} eq 'bar';
+    my($width,$height,$xmargin,$ymargin,$xoff,$yoff) = (
+        $argv->{'plot-width'} || $DEFAULTS->{'plot-width'},
+        $argv->{'plot-height'} || $DEFAULTS->{'plot-height'},
+        $argv->{'plot-x-margin'} || $DEFAULTS->{'plot-x-margin'},
+        $argv->{'plot-y-margin'} || $DEFAULTS->{'plot-y-margin'},
+        $argv->{'plot-x-offset'} || $DEFAULTS->{'plot-x-offset'},
+        $argv->{'plot-y-offset'} || $DEFAULTS->{'plot-y-offset'},
+    );
+    my $plot =
+        Imager::Plot->new(
+            Width => $width,
+            Height => $height,
+            GlobalFont => get_font($argv)
+        );
+    $argv->{' plot'} = $plot;
+    spew($argv,"== created plot object: $plot\n") if $VERBOSE;
+    $plot->AddDataSet(%args);
+    my $img =
+        Imager->new(
+            xsize => $width+$xmargin,
+            ysize => $height+$ymargin,
+        );
+    $img->box(filled => 1, color => 'white');
+    my $axis = $plot->GetAxis();
+    $axis->{'YgridNum'} = 8;
+    $axis->{'XgridNum'} = 10;
+    $axis->{'Border'} = 'b';
+    $axis->{'make_yrange'} = sub {
+        my($self) = @_;
+        $self->{'YRANGE'} = [0, $self->{'YDRANGE'}->[1] * 1.3 ];
+    };
+    $axis->{'Xformat'} = sub { tformat($argv,@_); };
+    $plot->{'Ylabel'} = $argv->{'plot-yaxis-title'} || $plotkey;
+    $plot->{'Xlabel'} = $argv->{'plot-xaxis-title'} || $DEFAULTS->{'plot-xaxis-title'};
+    $plot->{'Title'} = $title;
+#+D    spew($argv,"== calling Render...\n") if $VERBOSE; #+D
+    $plot->Render(Image => $img, Xoff => $xoff, Yoff => $yoff);
+#+D    spew($argv,"== done rendering plot\n") if $VERBOSE; #+D
+    return $img;
+}
+
+## plot_filename - return the name of a file in which to scribble the plot
+##
+sub plot_filename {
+    my($argv) = @_;
+    return undef if $argv->{'plot-to-stdout'};
+    my $plot = $argv->{'plot'};
+    return $plot if !$argv->{'plot-ts-files'} && ($argv->{'plot-overwrite'} || !(-f $plot));
+    my @parts = split(/\./, $plot);
+    my $type = pop(@parts);
+    return
+        join('.',
+             @parts,
+             strftime($argv->{'plot-file-ts-fmt'} || $DEFAULTS->{'plot-file-ts-fmt'},localtime(time)),
+             $type);
+}
+    
+## content_mime_type - return a mime type from an image file extension
+##
+sub content_mime_type {
+    my($argv,$fmt) = @_;
+    return $MIMES{$fmt} || 'image/'.$fmt;
+}
+
+## plot - generate a plot from the data so far
+##
+sub plot {
+    my($argv) = @_;
+    $argv->{' plot'} ||= {};
+    spew($argv,"== creating plot\n") if $VERBOSE;
+    my $img = create_plot($argv);
+    if (defined($img)) {
+        my $fn = plot_filename($argv);
+        if (defined($fn)) {
+            $img->write(file => $fn);
+            my $sz = (stat($fn))[7];
+            spew($argv,qq{== wrote plot to $fn: $sz bytes\n}) if $VERBOSE;
+            if ($argv->{'plot-view'}) {
+                my $cmd = $argv->{'image-viewer'} || $DEFAULTS->{'image-viewer'};
+                system(qq{$cmd $fn});
+            }
+        } else {
+            my $fmt = $argv->{'plot-fmt'} || $DEFAULTS->{'plot-fmt'};
+            unless (defined($Imager::formats{$fmt})) {
+                spew($argv,"** unsupported plot format $fmt ignored\n");
+                delete $argv->{'plot'};
+            } else {
+                if ($argv->{'plot-http-headers'}) {
+                    print "Content-Type: ".content_mime_type($argv,$fmt)."\n\n";
+                }
+                $img->write(fd => fileno(STDOUT), type => $fmt);
+            }
+        }
+    }
+}
+
+## summarize - spit out a summary of the situation
+##
+sub summarize {
+    my($argv) = @_;
+    if (defined(my $data = $argv->{' data'})) {
+        my $plotkey = $argv->{'plot-key'};
+        ($plotkey) = @{$argv->{' pattern order'}} unless defined $plotkey;
+        my $points = [ map { [$_, $data->{$_}->{$plotkey} ] } sort { $a <=> $b } keys(%$data) ];
+        my($min,$max,$avg) = stupid_stats($points);
+        print
+            sprintf(qq{%d %s samples: min=%.1f, max=%.1f, avg=%.1f\n},
+                    scalar(@$points), $plotkey, $min, $max, $avg);
+    }
+}
+
+MAIN: {
+    $| = 1;
+    my $argv = parse_argv({'_' => [], 'pattern' => {}}, @ARGV);
+    $VERBOSE = $argv->{'verbosity'} || $argv->{'verbose'} || 0;
+    $QUIET = $argv->{'quiet'} || 0;
+    license()   if $argv->{'license'};
+    copyright() if $argv->{'version'} || $argv->{'copyright'};
+    usage()     if $argv->{'help'};
+    usage(qq{Require an argument: url})
+        unless @{$argv->{'_'}} || ($argv->{'reload-only'} && !exists($argv->{'loop'}));
+    my($url) = @{$argv->{'_'}};
+    my $ua = create_ua($argv);
+    my $method = $argv->{'method'} || $DEFAULTS->{'method'};
+#    $SIG{'TERM'} = sub { ++$INTERRUPTED; };
+#    $SIG{'QUIT'} = sub { ++$INTERRUPTED; };
+#    $SIG{'INT'}  = sub { ++$INTERRUPTED; };
+#    $SIG{'HUP'}  = sub { ++$INTERRUPTED; };
+    if ($argv->{'plot'}) {
+        if (!$HAVE_IMAGER || !$HAVE_IMAGER_PLOT) {
+            print STDERR qq{Imager and/or Imager::Plot are not installed - ignoring -plot\n};
+            delete $argv->{'plot'};
+        } else{
+            $argv->{' data'} = {};
+        }
+    }
+    if ($argv->{'reload'} && defined(my $fn = $argv->{'output'})) {
+        $argv->{' data'} ||= {};
+        my $fh = IO::File->new("< $fn");
+        if (defined($fh)) {
+            my $n = 0;
+            while (defined(my $old = <$fh>)) {
+                chomp($old);
+                next unless $old =~ /\|/;
+                next if $old =~ /^\*\*|^==|^\#/;
+                my($time,$key,$val) = split(/\|/, $old, 3);
+                my $t = parse_ts($time);
+                next unless defined $t;
+                $argv->{' data'}->{$t} ||= {};
+                $argv->{' data'}->{$t}->{$key} = $val;
+                ++$n;
+            }
+            $fh->close();
+            print STDERR "# reloaded $n data points from $fn\n" if $VERBOSE;
+        }
+    }
+    if (!exists($argv->{'loop'})) {
+        scrape($argv,$ua,$method,$url) unless $argv->{'reload-only'};
+        plot($argv) if $argv->{'plot'};
+    } else {
+        my $loop = $argv->{'loop'};
+        $loop = 0 if $loop eq 'forever';
+        my $sleep_time = $argv->{'sleep'} || $DEFAULTS->{'sleep'};
+        $sleep_time = $DEFAULTS->{'sleep'} if $sleep_time <= 0;
+        $SIG{'INFO'} = sub { summarize($argv); }; # XXX not safe, but effective
+        while (!$INTERRUPTED) {
+            scrape($argv,$ua,$method,$url);
+            plot($argv) if $argv->{'plot'};
+            if ($loop > 0) {
+                last unless --$loop > 0;
+            }
+            ## If you cannot figure out why I do this, here's a hint: Control-T
+            my $now = time();
+            my $desired = $now + $sleep_time;
+            while ($now < $desired) {
+                my $dt = $desired - $now;
+                sleep($dt);
+                $now = time();
+            }
+        }
+        spew($argv,"** INTERRUPTED\n") if $INTERRUPTED && !$QUIET;
+    }
+    if (defined(my $fh = $argv->{' outhandle'}) && $argv->{' closehandle'}) {
+        $fh->close();
+    }
+    exit(0);
+}
+
+__END__
+
+=head1 NAME
+
+scraper - ridiculously simple screen scraper
+
+=head1 SYNOPSIS
+
+  scraper -pattern=name:regexp -pattern=name:regexp ... url
+
+=head1 DESCRIPTION
+
+Scraper scrapes data from URLs in an extremely simplistic way.  It
+splits the content sent back into lines, and runs any number of
+regular expressions across each line.  Each regexp is supposed to have
+one captured subexpression, whose value is saved if the line matches.
+Every regexp is given a name, and that name is used to remember the
+captured subexpression value each time through.
+
+For instance, to scrape the current signal strength from my
+DirecWAY DW6000 satellite modem, I do:
+
+  $ scraper -pattern='SignalStrength:Signal\sStrength\.+\s(\d+)' \
+      http://192.168.0.1/stats/summary/summary.html
+  2005-10-21 14:56:57|SignalStrength|80
+
+To specify more than one pattern to look for, give more than one
+-pattern option.  To debug, try the -verbose option: it will spew out
+the raw response data as we march through it trying to find matches.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -verbose (or -v)
+
+=item -verbosity=int (or -V=int)
+
+The first form increments the verbosity level every time it is seen.
+The second form sets the verbosity level to the integer specified.
+Higher verbosity levels mean more output.
+
+=item -quiet
+
+Be quiet about everything but errors.
+
+=item -help
+
+Print a short usage message.  If you specify -verbose, you get this
+man page.
+
+=item -version (also -copyright)
+
+=item -license
+
+Print our version and copyright, or our license.
+
+=item -user-agent=name
+
+The User-Agent header to send in the request.  Defaults to C<HairyPlotter/0.1.1>.
+If you don't like that, set something else.
+
+=item -method=GET|POST
+
+The HTTP method to use in the request.  Defaults to GET.
+
+=item -ignore-errors
+
+Boolean: if specified, we do not die on unsuccessful HTTP result codes
+in responses.  Otherwise, we do, after reporting the full HTTP status
+line.
+
+=item -output=filename
+
+Spit our output into the named file.  Otherwise, we spit it onto stdout.
+
+=item -append
+
+If an output file is specified, append to it instead of overwriting.
+
+=item -reopen
+
+If an output file is specified and C<-append> is specified, re-open
+the file for append every time we write something to it.  Combined
+with C<-loop> this means that we can read the file from another
+process without worrying about missing buffered output.
+
+=item -ts-fmt=fmt
+
+Set the format of the time stamp we spit out.  This should be
+a POSIX::strftime format string.  The default is C<%Y-%m-%d %H:%M:%S>.
+
+=item -pattern=name:regexp
+
+Add another pattern to the list of things to look for.  Name should be
+some symbolic name for the captured subexpression we grab.  Regexp
+should be a perl regular expression with one captured subexpression.
+
+More than one pattern can be given by supplying more than one
+C<-pattern> option, but all of the C<name> parts must be unique for
+each invocation of C<scraper>.
+
+=item -loop=forever|int
+
+Scrape the data source in a loop.  We can either run a specified number
+of times, or forever by saying C<-loop=forever>.
+
+=item -sleep=seconds
+
+If C<-loop> is given, sleep this many seconds between iterations.  The
+default is 30.
+
+=item -dup-to-stdout
+
+If specified, we duplicate all output that we send to the output file
+on stdout as well, so you can see what's going on.
+
+=back
+
+=head2 Plotting-related Options
+
+If the C<-plot> option is specified and the C<Imager> and C<Imager::Plot>
+perl modules are available, a plot of the data so far will be produced.
+This is really only useful in conjunction with C<-loop> or C<-reload>
+and a non-empty data file.
+
+=over 4
+
+=item -reload
+
+Reload data from previous run - requires the C<-output> option to
+specify where that data lives.
+
+=item -reload-only
+
+If specified with C<-reload>, we do not scrape any data this run.
+This is useful for using scraper to generate plots from old data
+without trying to generate any more.
+
+=item -plot=output-file
+
+Produce a plot in the named output file.  The extension will be used
+to guess the format.
+
+=item -plot-overwrite
+
+=item -plot-ts-files
+
+=item -plot-file-ts-fmt=fmt
+
+If C<-plot-overwrite> is specified then old plot images are
+overwritten without asking.  The default is to mung the name to make
+it unique.  The way we do this can be altered by C<-plot-file-ts-fmt>,
+which should specify a POSIX::strftime-style format string.  If you
+specify C<-plot=foo.png> and C<foo.png> exists, we will take the
+result of invoking POSIX::strftime with the value of
+C<-plot-file-ts-fmt> and the current time and interpose it before the
+file extension.  The default format is C<%Y%m%d%H%M%S>, so you will
+end up with files name e.g. C<foo.20051015192391.png>.
+
+If you always want this to happen regardless of whether or not the
+file exists or not, then specify C<-plot-ts-files>.
+
+=item -plot-to-stdout
+
+=item -plot-http-headers
+
+If C<-plot-to-stdout> is specified then the value of the C<-plot>
+option is ignored and the plot is spewed out onto stdout in whatever
+format you asked for.  If you specify C<-plot-http-headers>, then we
+prefix this raw pile of binary goo with valid HTTP headers, so you can
+invoke us to spit out an image at a web browser.
+
+=item -plot-key=key
+
+Plot the given key along the Y axis, with time being the X axis.
+If no C<-plot-key> is given, the first C<-pattern> is used.
+If the key was not mentioned in one of your C<-pattern>
+options, the results are unpredictable.
+
+=item -plot-font-dir=dir
+
+Look for fonts in the named dir.  Currently very crude.
+
+=item -plot-yaxis-title=string
+
+Label the y axis with the given string; the default is the plot key.
+
+=item -plot-xaxis-title=string
+
+Label the x axis; the default is C<seconds since first sample>.
+
+=item -plot-title=string
+
+Label the whole plot with the given string.
+
+=item -plot-style=style
+
+Change the plot style from the default simple line style to an alternative.
+The only alternative right now is C<bar>, which plots each point as a little
+bar.
+
+=item -plot-bar-width=n
+
+For C<bar>-style plots, the width of the bar in pixels.  The default is 3.
+
+=item -plot-width=int (Default: 700)
+
+=item -plot-height=int (Default: 350)
+
+=item -plot-x-margin=int (Default: 50)
+
+=item -plot-y-margin=int (Default: 50)
+
+=item -plot-x-offset=int (Default: 40)
+
+=item -plot-y-offset=int (Default: 370)
+
+These all set fairly obvious gross characteristics of the plot image
+we produce.  They are not automatically calculated from each other, so
+if you change e.g. C<-plot-width> then you probably want to change the
+margin and offset by hand.
+
+=item -plot-view
+
+=item -image-viewer=cmd
+
+If C<-plot-view> is specified, we will call an image viewer program on
+the resulting plot file after it is produced.  By default,
+C<-image-viewer> is C<xv>.  Don't do this with C<-loop>, its annoying.
+
+=back
+
+=head1 EXAMPLES
+
+I accumulate a plot of my satellite uplink's signal strength over time by
+cd'ing into a web-accessible directory on an internal server and typing:
+
+  $ scraper -verbose -ts-fmt=%s -output=sstrength.txt -append \
+        -plot-overwrite -plot=sstrength.png -reload \
+        -loop=forever -sleep=10 -dup-to-stdout \
+        -pattern='SignalStrength:Signal\sStrength\.+\s(\d+)' \
+     http://192.168.0.1/stats/summary/summary.html
+
+This causes the raw data to accumulate in sstrength.txt (with a raw
+timestamp output to make parsing quicker), and for a current plot to
+be overwritten into C<sstrength.png> every 10 seconds.
+
+=head1 VERSION HISTORY
+
+  0.1.2   24 Jan 06     attila  fixed pattern order
+  0.1.1   21 Oct 05     attila  added plot fu
+  0.1.0   21 Oct 05     attila  created
+
+=cut
+
+##
+# Local variables:
+# mode: perl
+# tab-width: 4
+# perl-indent-level: 4
+# cperl-indent-level: 4
+# cperl-continued-statement-offset: 4
+# indent-tabs-mode: nil
+# comment-column: 40
+# End:
+##

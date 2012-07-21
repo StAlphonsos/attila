@@ -1,0 +1,270 @@
+## attila's zsh setup
+
+[ -f $HOME/.zshenv ] && source $HOME/.zshenv
+
+umask 002
+
+## This is set definitively later on...
+agent_not_there=0
+
+setopt PROMPT_SUBST
+setopt nohup
+
+am_root=0
+[ x"`id -u`" = x0 ] && am_root=1
+PROMPTAIL='> '
+if [ $am_root = 1 ]; then
+  PROMPTAIL='# '
+fi
+
+delta_t() {
+  _DELTA_T=0
+  _now=`date +%s`
+  if [ x"$_LAST_T" = "x" ]; then
+    _DELTA_T='?'
+  else
+    _secs="`expr $_now - $_LAST_T`"
+    if [ x"$_secs" = "x" ]; then
+      _DELTA_T='?'
+    else
+      _DELTA_T="`ub -Q grok $_secs secs`"
+    fi
+  fi
+  _LAST_T=$_now
+}
+
+## setprompt - set our prompt appropriately
+##
+setprompt() {
+#delta_t
+case x"$TERM" in
+  xemacs|xdumb)
+    export PROMPT='[%D{%H:%M:%S%z}] %m:%2~ %i'$PROMPTAIL
+    export RPROMPT=""
+    ;;
+  xcygwin|xeterm|xxterm)
+    export PROMPT='%m %i%B'$PROMPTAIL'%f'%b
+    export RPROMPT="%S[%D{%H:%M:%S%z}]%s"
+    ;;
+  *)
+    export PROMPT='%m %i%B'$PROMPTAIL'%f'%b
+    export RPROMPT="%S[%D{%H:%M:%S%z}]%s"
+#    export PROMPT='%S[%D{%H:%M:%S}]%s %m %i'$PROMPTAIL'%f'
+#    export RPROMPT=""
+    ;;
+esac
+bindkey "^?" backward-delete-char
+bindkey "\e[3~" backward-delete-char
+bindkey -e
+bindkey ' ' magic-space
+setopt AUTO_LIST
+setopt AUTO_MENU
+}
+
+setprompt
+
+source ~/.zshaliases
+
+HISTSIZE=10000
+HISTFILE=~/.zhistory
+SAVEHIST=10000
+DIRSTACKSIZE=100
+
+#hosts=(itzamna agrun hawg sancho fizzle agar)
+#compctl -k hosts ssh
+#compctl -k hosts telnet
+#compctl -k hosts -S ':' + -f -x 'n[1,:]' -f - 'n[1,@]' -k hosts -S ':' -- scp
+#compctl -k hosts -S ':' + -f -x 'n[1,:]' -f - 'n[1,@]' -k hosts -S ':' -- rsync
+#compctl -g '*(-/)' cd pushd
+#compctl -g '*(/)' rmdir dircmp
+#compctl -j -P % -x 's[-] p[1]' -k signals -- kill
+#compctl -j -P % fg bg wait jobs disown
+#compctl -A shift
+#compctl -caF type whence which
+#compctl -F unfunction
+#compctl -a unalias
+#compctl -v unset typeset declare vared readonly export integer
+#compctl -e disable
+#compctl -d enable
+
+#fpath=($fpath ~/.zsh)   # if your compdef dir is ~/.zsh
+#autoload -U compinit
+#compinit
+
+## xtermtitle - set the title of xterms we are running in
+##
+xtermtitle() {
+    case x$TERM in
+      xxterm*|xrxvt)
+        if [ x"$1" = x ]; then
+          xtitle "`print -P '[z] %n@%m [%l] %2~'`"
+          xicontitle "`print -P '[z] %n@%m [%l] %2~'`"
+        else
+          xtitle "`print -P '[%m] $1'`"
+          xicontitle "`print -P '[%m] $1'`"
+        fi
+        ;;
+      xscreen)
+        if [ x"$1" = x ]; then
+          if [ x"$ZT" = x ]; then
+            screen_title.pl "`print -P '[z] %2~'`"
+          else
+            screen_title.pl "[z] $ZT"
+          fi
+        else
+          screen_title.pl "[z] $1"
+        fi
+        ;;
+      *) ;;
+    esac
+}
+
+## Check for gpg-agent
+checkgpg() {
+  gpgai=$HOME/.gpg-agent-info
+  needa=0
+  [ -f $gpgai ] && source $gpgai
+  if [ x"$GPG_AGENT_INFO" = x ]; then
+    needa=1
+  else
+    _f=`echo $GPG_AGENT_INFO | awk -F: '{print $1}'`
+    [ ! -S $_f ] && needa=1
+  fi
+  if [ $needa -eq 1 ]; then
+    gpg-agent --daemon --enable-ssh-support --write-env-file $gpgai
+    source $gpgai
+  fi
+  export GPG_AGENT_INFO
+}
+
+## checkagent - set agent_not_there to 1 or 0
+##
+checkagent() {
+  if [ x"$SSH_AGENT_PID" = x ]; then
+    agent_not_there=1
+  else
+    agent_not_there=0
+    (kill -0 $SSH_AGENT_PID 2>/dev/null) || agent_not_there=1
+  fi
+}
+
+##
+# Define precmd() depending on the type of terminal environment we
+# have; in EMACS, don't do the xtermtitle bit.  Also, set EDITOR and
+# CVSEDITOR appropriately.
+##
+case "$TERM" in
+  screen*)
+    export EDITOR=zile
+    export CVSEDITOR=zile
+    precmd() {
+      checkagent
+      setprompt
+      xtermtitle
+    }
+    preexec() {
+      checkagent
+      setprompt
+      xtermtitle "$1"
+    }
+    xtermtitle
+    stty intr ^C
+    ;;
+  cygwin|xterm*|dtterm|rxvt)
+    export TERM=xterm
+    export EDITOR=zile
+    export CVSEDITOR=zile
+#    export EDITOR=teco
+#    export CVSEDITOR=teco
+    precmd() {
+      checkagent
+      setprompt
+      xtermtitle
+    }
+    preexec() {
+      checkagent
+      setprompt
+      xtermtitle "$1"
+    }
+    xtermtitle ""
+    [ -t 0 ] && stty intr ^C
+    ;;
+  emacs|dumb)
+    export EDITOR=emacsclient
+    export CVSEDITOR=emacsclient
+    export PAGER=cat
+    precmd() {
+      checkagent
+      setprompt
+    }
+    ;;
+esac
+
+##
+# Authentication Fu
+#
+# My shell instances make contact with the ssh-agent process on
+# my laptop by means of a convention using a file in my ~/.ssh
+# directory called agent_info.  There is a set of commands in
+# ~/bin/reagent that does the right stuff, which I source to
+# set up my environment.  If that doesn't work, then I do what
+# is needed to get my agent running, including mounting the
+# encrypted filesystem where I keep my keys.  I use a hacked
+# version of vnconfig that knows how to talk to ssh-askpass,
+# which I really should submit to the OpenBSD project...
+#
+# I don't recommend doing this kind of magic on a multi-user
+# machine.  I only do this on my laptop, and I never let anyone
+# else use my laptop.  Ever.
+##
+start_agent=0
+ssh-add -l >/dev/null 2>&1 || start_agent=1
+_agfile=$HOME/.ssh/agent_info
+if [ $start_agent = 1 -a -x $HOME/bin/reagent ]; then
+  ## Try sourcing agent_info.  If it has stale information
+  ## then the reagent invocation below will force a new
+  ## ssh-agent process to kick off and we'll be prompted for
+  ## passphrases
+  if [ -f $_agfile ]; then
+    source $_agfile
+  fi
+  ## If not running under X then ssh-askpass will prompt on
+  ## stdin; if we are, then redirect stdin to /dev/null to
+  ## force ssh-askpass to use a GUI instead.
+  if [ x${DISPLAY} = x ]; then
+    reagent
+  else
+    reagent < /dev/null
+  fi
+  ## Finally, agent_info should be cooked.
+  source $_agfile
+fi
+## It might be that some losing Linux/Ubuntu crap has happened to us
+## and we're using an ssh-agent that was already started for us by
+## whatever Linux.crack the machine happened to be smoking.  In this
+## case it seems to be easier to go with the crack.flow and use that
+## ssh-agent process.  In that case we will have noticed a working
+## agent above.  We now look to make sure that the info in agent_info
+## is correct, which is a bit expensive but we only do it at at
+## start-up time.  If there are turds in agent_info from a previous
+## incarnation, we'll catch it here and over-write them with working
+## infos.  This will keep us from starting more than one ssh agent.
+if [ x"$SSH_AUTH_SOCK" != x -a $start_agent = 0 -a -w $HOME/.ssh ]; then
+  write_it=1
+  if [ -f $_agfile ]; then
+    grep -q $SSH_AUTH_SOCK $_agfile && write_it=0
+  fi
+  ## Out of date info in agent_info - overwrite
+  if [ $write_it = 1 ]; then
+    echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK  > $_agfile
+    echo export SSH_AUTH_SOCK	      >> $_agfile
+    echo SSH_AGENT_PID=$SSH_AGENT_PID >> $_agfile
+    echo export SSH_AGENT_PID	      >> $_agfile
+  fi
+fi
+
+## This keeps bizarre extra newlines from appearing in EMACS shell
+## buffers...
+if [ x$EMACS = xt ]; then
+  unsetopt zle
+fi

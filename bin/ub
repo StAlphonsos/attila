@@ -1,0 +1,1317 @@
+#!/usr/bin/perl
+##
+# ub - utility belt
+#
+# (C) 1997-2005 by attila <attila@stalphonsos.com>.  all rights reserved.
+#
+# Time-stamp: <2011-08-01 09:04:01 attila@stalphonsos.com>
+# $Id: ub,v 1.4 2005/12/21 01:08:41 attila Exp $
+#
+# author: attila <attila@stalphonsos.com>
+#
+# Description:
+#
+# perl utility belt.  slices, dices, groks, spews, plucks, converts and
+# describes.  for no extra fee, it will shine your shoes.  you just have
+# to figure out how to get them into the computer.
+##
+use strict;
+use vars
+    qw($ORIGINAL_SCRIPT $P $VERSION $VERBOSE $OPTS $USAGE $DESCR $AUTHOR
+       $COPYRIGHT $ARGS_DESC $LOG_STDERR $LOG_FILE $LOG_FP $LOG_TSTAMP_FMT
+       $DEFAULTS @_RESULT $MAX_XSTRING_DEPTH $XSTRING_LEVEL $_INPUT
+       $OVERWRITE_RECORD $HAVE_READLINE $HAVE_POD_PERLDOC $HAVE_UNITS
+       $HAVE_QUOTE $HAVE_TIME_HIRES $NUMBER %LOOP_HELP $QUIET
+      );
+
+BEGIN {
+  $ORIGINAL_SCRIPT = $0;
+  ($P) = reverse(split('/',$0));
+}
+
+END {
+  if (defined($LOG_FP)) {
+    print $LOG_FP "$P: ".ts()." [*] ub $VERSION shutting down\n";
+    $LOG_FP->close();
+    $LOG_FP = undef;
+  }
+}
+
+use POSIX qw(floor strftime);
+use Getopt::Std;
+use IO::Handle;
+use IO::File;
+use File::Temp qw/tempfile tempdir/;
+$@ = undef;
+eval "use Pod::Perldoc";
+$HAVE_POD_PERLDOC = !$@;
+$@ = undef;
+eval "use Term::ReadLine";
+$HAVE_READLINE = !$@;
+$@ = undef;
+eval "use Physics::Unit qw|:ALL|;";
+$HAVE_UNITS = !$@;
+$@ = undef;
+eval "use Finance::Quote;";
+$HAVE_QUOTE = !$@;
+$@ = undef;
+eval "use Time::HiRes";
+$HAVE_TIME_HIRES = !$@;
+$NUMBER = qr/\d+|\.\d+|\d+\.\d+|-\d+|-\.\d+|-\d+\.\d+/;
+$QUIET = 0;
+
+$DEFAULTS =
+  { 'record_file' => 'ubrecord.pl',
+    'ddl_local_ssh' => 'ssh',
+    'ddl_local_nc' => 'nc',
+    'ddl_local_ibs' => '1024000',
+    'ddl_local_seek' => '0',
+    'ddl_local_obs' => '1024000',
+    'ddl_nc_wait' => '5',
+    'ddl_remote_nc' => 'nc',
+    'ddl_remote_port' => '9999',
+    'ddl_remote_ibs' => '1024000',
+    'ddl_remote_skip' => '0',
+    'ddl_remote_obs' => '1024000',
+    'ddl_watch_sleep' => '10',
+    'ddl_min_remote_port' => '9218',
+    'ddl_max_remote_port' => '32019',
+    'ddl_remote_sleep' => '0',
+    'ddl_local_sleep' => '15',
+    'ddl_inter_watch_sleep' => '19',
+  };
+$OVERWRITE_RECORD = 0;
+$MAX_XSTRING_DEPTH = 10;
+$XSTRING_LEVEL = undef;
+$VERSION = '0.1.8';
+$DESCR = 'attila\'s utility belt';
+$AUTHOR = 'attila <attila@stalphonsos.com>';
+$VERBOSE = 0;
+$OPTS = 'hHvV:x:X:LDRF:OrTE:sl:SQ';
+$COPYRIGHT = '(C) 2003-%d by attila <attila@stalphonsos.com>';
+$ARGS_DESC = "perlexp|cmd...";
+$LOG_STDERR = 0;
+$LOG_FILE = undef;
+$LOG_FP = undef;
+$LOG_TSTAMP_FMT = '%Y-%m-%d %H:%M:%S';
+$USAGE = <<__UsAGe__;
+  options:
+           -h    print this message and exit
+           -H    same as -h plus nascent man page
+           -v    be verbose
+           -V x  set verbosity to x (-v is the same as -V 1)
+           -x x  set xstring output depth to x (def=none)
+           -X x  set xstring max depth to x (def=10)
+           -L    drop into loop after processing args
+           -D    die on evaluation errors instead of printingout
+           -R    record commands
+           -F x  save recorded to file x
+           -O    overwrite old record file
+           -T    time all commands by default
+           -r    "raw" mode - do not use ReadLine even if we have it
+           -E x  use cmd x as editor
+           -s    shell mode: treat obvious shell commands as such
+           -l x  send a log to file x
+           -S    send a log to stderr
+           -Q    be vewy quiet
+__UsAGe__
+%LOOP_HELP =
+    ( 'q' => <<__CmdH_q__,
+Quit $P
+__CmdH_q__
+      'V' => <<__CmdH_V__,
+Displays the version of $P you are running
+__CmdH_V__
+      'v' => <<__CmdH_v__,
+[level] sets the verbosity level to our argument, if given.  Otherwise,
+displays the current verbosity level.
+__CmdH_v__
+      'b' => <<__CmdH_b__,
+[nbytes] Dump current contents of buffer.  If an argument is specified, then
+only that many bytes are displayed, and a trailing "..." is appended
+to the output if there is more than that in the buffer.
+__CmdH_b__
+      'c' => <<__CmdH_c__,
+Clear buffer
+__CmdH_c__
+      'l' => <<__CmdH_l__,
+Print result of last evaluation
+__CmdH_l__
+      'r' => <<__CmdH_r__,
+Dump current recording, if any
+__CmdH_r__
+      'R' => <<__CmdH_R__,
+Toggle recording mode.  Default is off.  If you turn on recording,
+then all evaluations are remembered and can be saved to a file.
+__CmdH_R__
+      's' => <<__CmdH_s__,
+[file] Save current recording to a named file; if none is specified,
+then $DEFAULTS->{record_file} is used.
+__CmdH_s__
+      'L' => <<__CmdH_L__,
+[file flag] Load the named file into the buffer.  Overwrites the current contents
+of the buffer if successful.  If a second (flag) argument is given
+we will call the \\g command immediately after loading the file.  If
+the flag argument is one of the letters 'e' or 't', then we call
+the \\e or \\t commands instead, respectively.
+__CmdH_L__
+      'o' => <<__CmdH_o__,
+[opts] Set command-line options on the fly, using the same letters
+as you would use on the command-line separated by spaces.  For instance, \\o s
+would turn on shell mode.  To specify a value use e.g. \\o \\s:0 to turn off shell mode.
+__CmdH_o__
+      'O' => <<__CmdH_O__,
+Toggle over-write mode for recordings.  By default, it is off, and
+we will refuse to over-write any existing recording file.  If you
+turn it on, then we will over-write any existing recording file
+with the \\s command.
+__CmdH_O__
+      'g' => <<__CmdH_g__,
+Execute the current contents of the buffer and display the results.
+__CmdH_g__
+      'e' => <<__CmdH_e__,
+Execute the current contents of the buffer but do not display the
+results.
+__CmdH_e__
+      'E' => <<__CmdH_E__,
+[editor cmd] Invoke your favorite editor on the current buffer, and replace the
+buffer with the results of your editing session.  If your current
+buffer has something in it, and your editor session results in a
+zero-length result, we refuse to over-write the buffer and print
+a warning: use the \\c command to clear the buffer instead of the \\E
+command.  Your "favorite" editor is either the one you give in the
+first argument, the value you gave to the -E option if you don\'t
+specify one (or if your first argument to \\E is a single dash),
+or the value of your EDITOR environment variable if all else
+fails.  The built-in default is "vi" if even your environment
+holds no clues.  If the second argument is specified, then it
+can be a backslash command to execute immediately after a
+successful editor invocation (specified without a backslaskh);
+the default is the b command, which will display the buffer
+(up to the first 128 bytes, anyway).  You can say something like
+   \\E - g
+to run the default editor and execute the results immediately,
+for instance.
+__CmdH_E__
+      't' => <<__CmdH_t__,
+[count] Execute the buffer quietly (i.e. as if you used the \\e command)
+and print the number of seconds it took to run.  If you give the optional
+count argument, the buffer is executed that many times, and the number
+of seconds per iteration is reported as well as the total time.  Useful
+for back-of-the-envelope benchmarking.
+__CmdH_t__
+      'T' => <<__CmdH_T__,
+Toggle timing.  If on, it\'s as if you use the \\t command to execute
+things always - timings are reported for every execution.  The default
+is off.
+__CmdH_T__
+      'd' => <<__CmdH_d__,
+[func] display the documentation for the named built-in Perl function.
+If func has two colons in it, then we treat our argument as a module
+name and display the POD for it, if it has one.
+__CmdH_d__
+      '?' => <<__CmdH_qq__,
+[cmd] Display help on backslash commands in $P.  If not given any argument,
+we display a short summary for each command, otherwise we display more
+detailed documentation for the given command, which should be a single
+letter.
+__CmdH_qq__
+    );
+##
+sub opts_str {
+  my $str = shift(@_);
+  my $dostr = "";
+  my $dvstr = "";
+  my @opts = split("", $str);
+  my $dvcol = 0;
+  my $maxdv = 30;
+  while (my $o = shift(@opts)) {
+    if ($opts[0] eq ':') {
+      shift(@opts);
+      if ($dvcol > $maxdv) {
+        $dvstr .= ("\n" . (" " x (11 + length($P))));
+        $dvcol = 11 + length($P);
+        $maxdv = 65;
+      }
+      $dvstr .= " " if length($dvstr);
+      $dvstr .= "[-$o x]";
+      $dvcol += 7;
+    } else {
+      $dostr .= "[-" unless length($dostr);
+      $dostr .= $o;
+    }
+  }
+  $dostr .= "]" if length($dostr);
+  my $dstr = $dostr;
+  $dstr .= " " if length($dstr);
+  $dstr .= $dvstr;
+  return $dstr;
+}
+##
+sub usage_section {
+  my $fh = shift(@_);
+  my $regexp = shift(@_);
+  my $title = shift(@_) || $P;
+  my $hdr_fmt = shift(@_);
+  my $in_sect = 0;
+  while (<$fh>) {
+    next unless ($in_sect || /^=head1\s+$regexp/);
+    if (/^=head1\s+$regexp/) {
+      $in_sect = 1;
+      print STDERR "\n  ","-" x 20, "[ $title ]", "-" x 20,"\n\n";
+      print STDERR sprintf($hdr_fmt, @_) if $hdr_fmt;
+      next;
+    } elsif ($in_sect && /^=cut/) {
+      last;
+    } elsif ($in_sect) {
+      print STDERR $_;
+    }
+  }
+}
+##
+sub usage {
+  my $msg = shift(@_);
+  print STDERR sprintf("%9s: %s\n", "ERROR", $msg) if $msg;
+  print STDERR sprintf("%9s: %s\n", $P, $DESCR);
+  print STDERR sprintf("%9s: %s\n", "version", $VERSION);
+  my $copyright = sprintf($COPYRIGHT, 1900+((localtime)[5]));
+  print STDERR sprintf("%9s: %s\n", "copyright", $copyright);
+  print STDERR sprintf("%9s  all rights reserved.  gimme gimme gimme.\n");
+  print STDERR sprintf("%9s: %s\n", "author", $AUTHOR);
+  print STDERR sprintf("%9s: %s %s %s\n", "usage", $P, opts_str($OPTS),
+                       $ARGS_DESC);
+  print $USAGE;
+  if (scalar(@_)) {
+    my $nope = 0;
+    open(ME, "<$0") || ($nope=1);
+    unless ($nope) {
+      usage_section(\*ME, 'DESCRIPTION', '  DESCRIPTION  ');
+      usage_section(\*ME, 'VERSION',     'VERSION HISTORY',
+                    "  %-7s   %-9s   %-7s %s\n", "VERS", "WHEN",
+                    "WHO", "WHAT");
+      close(ME);
+    }
+  }
+  exit(defined($msg));
+}
+##
+sub ts {
+  my $fmt = $LOG_TSTAMP_FMT || "%Y-%m-%d %H:%M:%S";
+  my $t = shift(@_) || time;
+  return POSIX::strftime($fmt, localtime($t));
+}
+##
+sub log_msg {
+  my $lvl = shift(@_);
+  return unless $VERBOSE >= $lvl;
+  my $logmsg = "$P: " . ts() . " [$lvl] @_\n";
+  print STDERR $logmsg if $LOG_STDERR;
+  if ($LOG_FILE && !$LOG_FP) {
+    $LOG_FP = new IO::File(">> $LOG_FILE")
+      or die "$P: could not create log file $LOG_FILE: $!\n";
+    $LOG_FP->autoflush(1);
+  }
+  print $LOG_FP $logmsg if $LOG_FP;
+}
+##
+sub xstring {
+  my $x = shift(@_);
+  my $iplevel = shift(@_);
+  my $plevel = $iplevel;
+  my $rlevel = shift(@_) || 0;
+  my($i,$ii,$e) = ("","","");
+  my $nplevel = undef;
+  if (defined($plevel)) {
+    $plevel = -$plevel if $plevel < 0;
+    $i = " " x ($plevel * 2);
+    $ii = "$i  ";
+    $e = "\n";
+    $nplevel = $plevel + 1;
+    $nplevel = -$nplevel if $iplevel < 0;
+  }
+  $x = 'undef' unless defined $x;
+  my $str = "$x";
+  if (!ref($x)) {
+    $str = qq{"$x"} unless $x =~ /^(\d+|\d+\.\d+)$/;
+  } else {
+    return qq{$i..."$str"...$e} if ($rlevel > $MAX_XSTRING_DEPTH);
+    if (UNIVERSAL::isa($x,"ARRAY")) {
+      $str  = $i."$x=".'['.$e;
+      $str .= join("$e",
+                   map {
+                     $ii.xstring($_,$nplevel,$rlevel+1).","
+                   } @$x).$e;
+      $str .= $i.']';
+    } elsif (UNIVERSAL::isa($x,"HASH")) {
+      my @keys;
+      if ($iplevel < 0) {
+        @keys = keys %$x;
+      } else {
+        foreach my $key (keys %$x) {
+          push @keys, $key unless $key =~ /^_/;
+        }
+      }
+      $str  = $i."$x=".'{'.$e;
+      my $guts = join("$e",
+                   map {
+                     my $v =
+                       !defined($x->{$_})? 'undef':
+                         xstring($x->{$_},$nplevel,$rlevel+1);
+                     if (defined($x->{$_}) && ref($x->{$_})) {
+                       qq{$ii$_ =>$e$v}
+                     } else {
+                       qq{$ii$_ => $v,}
+                     }
+                   } @keys);
+      $guts .= $e if length($guts);
+      $str .= $guts.$i.'}';
+    } elsif (UNIVERSAL::isa($x,"SCALAR")) {
+      $str .= $ii.q{\\} . $$x;
+    } else {
+      $str .= $ii.qq{?$str?};
+    }
+  }
+  return $str;
+}
+##
+sub xstr {
+  return 'undef' unless scalar @_;
+  return xstring($_[0],$XSTRING_LEVEL) if scalar(@_) == 1;
+  return '('. join(',', map { xstring($_,$XSTRING_LEVEL) } @_) . ')';
+}
+##
+sub readfile {
+  my $fn = shift @_;
+  return undef unless -f $fn;
+  open(F, "$fn") || (return undef);
+  my $slash = $/;
+  local $/ = undef;
+  my $contents = <F>;
+  $/ = $slash;
+  close(F);
+  return $contents;
+}
+##
+sub print_result {
+  my $expr = shift(@_);
+  my $rstr = xstr(@_);
+  $expr =~ s/\n$//;
+  print "  <== $expr\n  ==>" unless $QUIET;
+  if ($rstr =~ /\n/) {
+    print "\n$rstr\n";
+  } else {
+    print " $rstr\n";
+  }
+}
+##
+sub do_eval {
+  my($expr,$record,$die,$recording,$quiet) = @_;
+  my $death;
+  eval {
+    no strict;
+    $_INPUT = $expr;
+    @_RESULT = eval "$expr";
+    $death = "Error: $@" if $@;
+  };
+  if ($death) {
+    die(qq{$P: "$expr": $death\n}) if $die;
+    print("  *** $death");
+  }
+  print_result($expr,@_RESULT) unless $quiet;
+  push @$recording, [ time, $expr, @_RESULT ] if $record && ref $recording;
+}
+##
+sub dump_record {
+  my($record,$recording,$cargs) = @_;
+  if (!$record || !ref($recording)) {
+    print "<empty/>\n";
+    return;
+  }
+  print "<r>\n";
+  foreach my $r (@$recording) {
+    my @x = (@$r);
+    my $t = shift(@x);
+    my $e = shift(@x);
+    my $ts = ts($t);
+    my $r = xstr(@x);
+    print "[$ts]\n  ==> $e";
+    print "\n" unless $e =~ /\n$/;
+    print "  <==";
+    if ($r =~ /\n/) {
+      print "$r\n";
+    } else {
+      print " $r\n";
+    }
+  }
+  print "</r>\n";
+}
+##
+sub save_record {
+  my($record,$recording,$file) = @_;
+  return unless $record && ref($recording);
+  $file ||= $DEFAULTS->{record_file};
+  my $append = 0;
+  if ($file =~ /^+(.*)$/) {
+    $file = $1;
+    $append = 1;
+  }
+  if ($append) {
+    open(R, ">> $file") || die qq{$P: could not open "$file" for append: $!\n};
+  } elsif ((-f $file) && !$OVERWRITE_RECORD) {
+    print STDERR qq{refusing to overwrite "$file" - use -O or \\O\n};
+    return;
+  } else {
+    open(R, "> $file") || die qq{$P: could not open "$file" for writing: $!\n};
+  }
+  my $i = 0;
+  foreach my $r (@$recording) {
+    my @x = @$r;
+    my $t = shift(@x);
+    my $e = shift(@x);
+    $e .= "\n" unless $e =~ /\n$/;
+    print R "# <== $i @ ",ts($t),"\n";
+    print R $e;
+    my $s = '';
+    if (scalar(@x) == 0) {
+      $s = 'undef';
+    } elsif (scalar(@x) == 1) {
+      $s = xstring($s,undef);
+    } else {
+      $s = '('.join(',',map { xstring($_,undef) } @x).')';
+    }
+    print R "# ==> $s\n";
+    ++$i;
+  }
+  close(R);
+  print STDERR "[Wrote $file - $i entries]\n";
+}
+##
+sub print_loop_help {
+  my $what = shift(@_);
+  if (!defined($what)) {
+    print "<?> @_\n";
+    print q{  \q        - quit},"\n";
+    print q{  \b        - show buffer},"\n";
+    print q{  \c        - clear buffer},"\n";
+    print q{  \l        - print last result},"\n";
+    print q{  \r        - dump recording},"\n";
+    print q{  \R        - toggle recording},"\n";
+    print q{  \s file   - save recording to file},"\n";
+    print q{  \L file x - load buffer from file; if x is not blank, exec},"\n";
+    print q{  \O        - toggle overwrite for \s},"\n";
+    print q{  \o opts   - play with command-line options on the fly},"\n";
+    print q{  \g        - execute buffer},"\n";
+    print q{  \e        - execute but do not print result},"\n";
+    print q{  \E cmd x  - call editor cmd (or default) on buffer then do \x},"\n";
+    print q{  \t count  - exec and time quietly; count=#iterations (def=1)},"\n";
+    print q{  \T        - toggle timing on each command},"\n";
+    print q{  \d func   - print documentation for function},"\n";
+    print q{  \? cmd    - print this, or help on cmd if given},"\n";
+    print "</?>\n";
+  } elsif (defined(my $help = $LOOP_HELP{substr($what,0,1)})) {
+    my $chr = substr($what,0,1);
+    my $args = '';
+    ($args,$help) = ($1,$2) if ($help =~ /^\[(.*)\]\s+(.*)$/s);
+    print "<?> \\$chr $args\n$help</?>\n";
+  } else {
+    print "<?> $what\nNo help found\n</?>\n";
+  }
+}
+##
+sub bools { return $_[0]? "ON": "OFF" }
+##
+sub get_line {
+  my $ctx = shift(@_);
+  my $prompt = shift(@_);
+  my $result;
+  if (UNIVERSAL::isa($ctx,'Term::ReadLine')) {
+    $prompt ||= '-ub> ';
+    $result = $ctx->readline($prompt);
+  } else {
+    print $prompt if defined $prompt;
+    $result = $ctx->getline;
+  }
+  return $result;
+}
+##
+sub document {
+  my($func) = split(/\s+/, "@_");
+  my $args = [ $func ];
+  unshift(@$args, '-f') unless ($func =~ /::/ || ($func =~ /^[A-Z]/));
+  if ($HAVE_POD_PERLDOC) {
+    eval { Pod::Perldoc->run(args => $args) };
+  } else {
+    my $cmd = qq{perldoc }.join(" ", @$args);
+    system($cmd) == 0 || ($@ = $!);
+  }
+  if ($@) {
+    chomp($@);
+    print STDERR qq{[Error: $@]\n};
+  }
+  return undef;
+}
+##
+sub editor {
+  my($cargs,$buf,$opts) = @_;
+  my @args = split(/\s+/,$cargs);
+  my $EDITOR = shift(@args);
+  $EDITOR = undef if $EDITOR eq '-';
+  $EDITOR ||= $opts->{'E'} || $ENV{'EDITOR'} || 'vi';
+  my $tmpdir = tempdir(CLEANUP => 1);
+  my($fh,$filename) = tempfile(DIR => $tmpdir);
+  print $fh $buf;
+  close($fh);
+  my $cmd = qq{$EDITOR $filename};
+  print STDERR qq{[Calling editor: $cmd]\n} if $VERBOSE;
+  my $death;
+  system($cmd) == 0 || ($death=qq{Editor failure($cmd): $!});
+  my $res = readfile($filename);
+  my $nxtcmd = undef;
+  if (defined($res) && !defined($death)) {
+    $nxtcmd = shift(@args);
+    $nxtcmd = substr($nxtcmd,0,1) if defined $nxtcmd;
+  }
+  unlink($filename)             if -f $filename;
+  unlink(qq{$filename.OLD})     if -f qq{$filename.OLD};
+  unlink(qq{$filename.BAK})     if -f qq{$filename.BAK};
+  unlink(qq{$filename~})        if -f qq{$filename~};
+  return($death,$res,$nxtcmd);
+}
+##
+sub load_file {
+  my($file,$flag) = @_;
+  my($buf,$cmd) = (undef,undef);
+  return (undef,undef) unless defined($file) && (-f $file);
+  my $buf = readfile($file);
+  if (defined($buf)) {
+    $cmd = 'g';
+    if (defined($flag)) {
+      $cmd = 'e' if $flag eq 'e';
+      $cmd = 't' if $flag eq 't';
+    }
+  }
+  return($buf,$cmd);
+}
+##
+sub looks_like_shell_cmd {
+  my($string) = @_;
+  $string =~ s/^\s+//g;
+  my $is = 0;
+  if ($string =~ /^!\s+/) {
+    $is = 1;
+  } else {
+    my($firstword) = split(/\s+/,$string);
+    $is =
+        (length($firstword) && ($firstword =~ /^\w+$/) && ($string !~ /->|::/))? 1: 0;
+  }
+  print STDERR "[Checking for shell cmd: $string => $is]\n" if $VERBOSE;
+  return $is;
+}
+##
+sub prompt_string {
+  my($opts,$plus) = @_;
+  $plus ||= '-';
+  return '[ub]> ' if $opts->{'s'} && ($plus eq '-');
+  return $plus . 'ub> ';
+}
+##
+sub ub_loop {
+  my $opts = shift(@_);
+  my $fh = shift(@_);
+  my $record = $opts->{'R'};
+  my $die = $opts->{'D'};
+  my $recording = [];
+  unless ($fh) {
+    $fh = new IO::Handle;
+    $fh->fdopen(fileno(STDIN),"r") || die qq{stdin? $!\n};
+  }
+  my $oldh = select(STDOUT); $| = 1; select($oldh);
+  print "$DESCR version $VERSION; \\? for help\n" unless scalar(@_);
+  my $prompt = prompt_string($opts,undef) unless scalar(@_);
+  my $buf = '';
+  my $plus = '-';
+  my $time_cmd = $opts->{'T'} || 0;
+  while (defined(my $orig = get_line($fh,$prompt))) {
+    $_ = $orig;
+    s/\s+$//;
+    my $shell_cmd = !$opts->{'s'}? 0: looks_like_shell_cmd($buf.$orig);
+    if ($buf.$orig =~ /^!\s+(.*)$/) {
+      $shell_cmd = 1;
+    }
+    if ((/;$/ && !length($buf)) || $shell_cmd) {
+#      $orig =~ s/;$//g;
+      $buf .= $orig;
+      $buf =~ s/^!\s+//;
+      my $before = undef;
+      if ($HAVE_TIME_HIRES && $time_cmd) {
+        $before = Time::HiRes::time();
+      }
+      if ($shell_cmd) {
+        $buf =~ s/^!\s+//g;
+        $buf =~ s/\s*;\s*$//g;
+        if ($buf =~ /^grok\s+(.*)$/) {
+          my @words = split(/\s+/, $buf);
+          shift(@words);
+          my $death = undef;
+          eval { grok(@words); };
+          push(@$recording, [ time, "! $buf", "Success" ])
+              if $record and ref $recording;
+        } else {
+          print STDERR sprintf(qq{[Shell: %s]\n}, $buf) if $VERBOSE;
+          my $death = undef;
+          eval {
+            system($buf) == 0 or $death="Shell error: $!";
+          };
+          print "[$death]\n" if defined $death;
+          push(@$recording, [ time, "# shell: $buf", $death || "Success" ])
+              if $record and ref $recording;
+        }
+      } else {
+        do_eval($buf,$record,$die,$recording,0);
+      }
+      if ($HAVE_TIME_HIRES && $time_cmd) {
+        my $delta_t = (Time::HiRes::time() - $before);
+        printf(qq{[%.2f seconds]\n}, $delta_t);
+      }
+      $buf = '';
+    } else {
+      if (/^(.*)\\(q|b|c|g|e|t|T|l|r|R|O|o|s|d|L|E|v|V|\?)(\s*|\s+\S.*)$/i) {
+        my($pref,$cmd,$cargs) = ($1,$2,$3);
+        last                                    if $cmd eq 'q';
+        $cargs =~ s/^\s+//;
+        $cargs =~ s/\s+$//;
+        $cargs = undef unless length $cargs;
+        $buf .= $pref;
+        if ($cmd eq 'L') {
+          my($file,$flag) = split(/\s+/, $cargs);
+          my($tmpbuf,$tmpcmd) = load_file(split(/\s+/,$cargs));
+          if (defined($tmpbuf)) {
+            $buf = $tmpbuf;
+            $cmd = $tmpcmd if defined $tmpcmd;
+            my $nb = length($buf);
+            print STDERR qq{[Loaded $file: $nb bytes]\n};
+          }
+        }
+        if ($cmd eq 'E') {
+          my($x,$tmpbuf,$nxtcmd) = editor($cargs,$buf,$opts);
+          my $nb = defined($tmpbuf)? length($tmpbuf): 0;
+          my $onb = length($buf);
+          if (!defined($x)) {
+            if (!$nb && $onb) {
+              print STDERR
+                  qq{[Won't s/// $onb bytes => nothing - use \\c to clear buffer]\n};
+            } else {
+              $buf = $tmpbuf;
+              print STDERR qq{[Editor: $nb bytes (was $onb)]\n};
+            }
+          } else {
+            print STDERR
+                qq{[Editor error: $x - $onb bytes left alone in buffer]\n};
+            $nxtcmd = undef;
+          }
+          unless (defined($nxtcmd)) {
+            $nxtcmd = 'b';
+            $cargs = '128';
+          }
+          $cmd = $nxtcmd;
+        }
+        my $bufn = $buf;
+        $bufn =~ s/\n+$//;
+        if (($cmd eq 'b') && defined($cargs)) {
+          my $n = length($bufn);
+          if (($cargs =~ /^\d+$/) && ($n > $cargs)) {
+            $bufn = substr($bufn,0,$cargs) . " ...";
+          }
+        }
+        $bufn .= "\n" if length $bufn;
+        print "<buf>\n$bufn</buf>\n"            if $cmd eq 'b';
+        $buf = ''                               if $cmd eq 'c';
+        print_result($_INPUT,@_RESULT)          if $cmd eq 'l';
+        dump_record($record,$recording,$cargs)  if $cmd eq 'r';
+        print STDERR "[$P version $VERSION]\n"  if $cmd eq 'V';
+        if ($cmd eq 'v') {
+          print STDERR "[Current verbosity level: $VERBOSE]\n";
+          if (defined($cargs) && ($cargs =~ /^\d+$/)) {
+            $VERBOSE = $cargs;
+            print STDERR "[New verbosity level: $VERBOSE]\n";
+          }
+        }
+        if ($cmd eq 'o') {
+          my @cargv = split(/\s+/, $cargs);
+          while (defined(my $carg = shift(@cargv))) {
+            my($c,$v) = split(/:/, $carg, 2);
+            my $old = $opts->{$c};
+            if (!defined($v)) {
+              $opts->{$c} = 1;
+            } else {
+              $opts->{$c} = $v;
+            }
+            $old = '<undef>' if !defined($old);
+            my $new = $opts->{$c};
+            $new = '<undef>' if !defined($new);
+            print STDERR "[Option $c: $old => $new]\n";
+          }
+        }
+        if ($cmd eq 'O') {
+          $OVERWRITE_RECORD = !$OVERWRITE_RECORD;
+          print STDERR "[Overwrite is ",bools($OVERWRITE_RECORD),"]\n";
+        }
+        if ($cmd eq 'R') {
+          $record = !$record;
+          print STDERR "[Record is ",bools($record),"]\n";
+          $recording = [];
+        }
+        if ($cmd eq 'T') {
+          if (!$HAVE_TIME_HIRES) {
+            print STDERR "[Time::HiRes not installed - cannot time]\n";
+          } else {
+            $time_cmd = !$time_cmd;
+            if ($time_cmd) {
+              print STDERR "[Timing all commands]\n";
+            } else {
+              print STDERR "[Not timing all commands]\n";
+            }
+          }
+        }
+        save_record($record,$recording,$cargs)  if $cmd eq 's';
+        document($cargs)                        if $cmd eq 'd';
+        print_loop_help($cargs)                 if $cmd eq '?';
+        if (($cmd eq 'g') || ($cmd eq 'e') || ($cmd eq 't')) {
+          my $do_record = $record;
+          my $quiet = ($cmd eq 'e')? 1: 0;
+          my $niter = 1;
+          my $before;
+          if ($HAVE_TIME_HIRES) {
+            use Time::HiRes;
+            $before = Time::HiRes::time();
+            if (($cmd eq 't') && defined($cargs) && ($cargs =~ /^\d+$/)) {
+              $niter = $cargs;
+              $quiet = 1;
+              $do_record = 0;
+              print "[Running $niter iterations and timing them]\n";
+            }
+          }
+          my $count = $niter;
+          while ($count-- > 0) {
+            do_eval($buf,$do_record,$die,$recording,$quiet);
+          }
+          if ($HAVE_TIME_HIRES && ($time_cmd || ($cmd eq 't'))) {
+            my $delta_t = (Time::HiRes::time - $before);
+            my $per = $delta_t / $niter;
+            printf(qq{[%.2f seconds/iteration, %.2f seconds total]\n},
+                   $per, $delta_t);
+          }
+          $buf = '';
+        }
+      } else {
+        $buf .= $orig;
+      }
+    }
+    $plus = length($buf)? '+': '-';
+    $prompt = prompt_string($opts,$plus) unless scalar(@_);
+#    $prompt = $plus . 'ub> ' unless scalar(@_);
+  }
+}
+##
+sub plural {
+  my($n,$u) = @_;
+  return "$n $u" if $n == 1;
+  return "$n $u" . "s";
+}
+##
+sub elapsed_string {
+  my $deltat = int(shift(@_));
+  return "00m00s" if !$deltat;
+  my $dt = "";
+  my $MINUTES = 60;
+  my $HOURS = $MINUTES * 60;
+  my $DAYS = $HOURS * 24;
+  my $WEEKS = $DAYS * 7;
+  my $YEARS = $DAYS * 365;
+  if ($deltat > $YEARS) {
+    my $n = POSIX::floor($deltat / $YEARS);
+    $deltat -= $n * $YEARS;
+    $dt .= sprintf(q{%d%s}, $n, "Y") if $n > 0;
+  }
+  if ($deltat > $WEEKS) {
+    my $n = POSIX::floor($deltat / $WEEKS);
+    $deltat -= $n * $WEEKS;
+    $dt .= sprintf(q{%02d%s}, $n, "W") if $n > 0;
+  }
+  if ($deltat > $DAYS) {
+    my $n = POSIX::floor($deltat / $DAYS);
+    $deltat -= $n * $DAYS;
+    $dt .= sprintf(q{%02d%s}, $n, "D") if $n > 0;
+  }
+  if ($deltat > $HOURS) {
+    my $n = POSIX::floor($deltat / $HOURS);
+    $deltat -= $n * $HOURS;
+    $dt .= sprintf(q{%02d%s}, $n, "h") if $n > 0;
+  }
+  my $nm = POSIX::floor($deltat / $MINUTES);
+  $deltat -= $nm * $MINUTES;
+  $dt .= sprintf(q{%02d%s}, $nm, "m");
+  $dt .= sprintf(q{%02d%s}, $deltat, "s");
+  return $dt;
+}
+##
+sub rate_str {
+  my($num,$div,$dt,$units) = @_;
+  my $reading = $num / $div;
+  $dt = 0.0001 unless $dt;
+  $reading /= $dt;
+  $reading *= 8.0 if $units eq 'kbit';
+  return sprintf(q{%7.2f %s/sec},$reading,$units);
+}
+##
+sub augment_hash_from_file {
+  my($hashref,$filename) = @_;
+  if (-f $filename) {
+    my $death = undef;
+    open(FILE, "< $filename") || ($death="death: $!");
+    unless (defined($death)) {
+      while (<FILE>) {
+        next if /^\#/;
+        next if /^\s*$/;
+        $_ =~ s/(^\s+|\s+$)//g;
+        my($key,$val) = split(/\s+/, $_, 2);
+        $val = 1 unless defined $val;
+        $hashref->{$key} = $val;
+      }
+      close(FILE);
+    }
+  }
+}
+##
+sub grok {
+  my @args = @_;
+  my $grokked = 0;
+  if ($args[0] eq 'paypal') {
+    my $amt = $args[1];
+    if (!defined($amt)) {
+      print "paypal what?\n";
+    } else {
+      my $sum = ($amt * 0.029) + .30 + $amt;
+      printf "Paypal \$%.2f to send \$%.2f\n", $sum, $amt;
+    }
+    $grokked = 1;
+  }
+  if (!$grokked && ($args[0] eq 'watch')) {
+    my $what = $args[1];
+    if (!defined($what)) {
+      print "watch what?\n";
+    } elsif (-f $what) {
+      my $target_size = $args[2] || 0;
+      my $sleep = $args[3] || 10;
+      my $times = $args[4];
+      $times = undef if (defined($times) && ($times eq '-'));
+      my $ntimes = 0;
+      my $death = undef;
+      my $prev = undef;
+      my $total_t = undef;
+      my $total_delta = undef;
+      my $last_t = undef;
+      my $completed = 0;
+      my @info;
+      my $ctfile = undef;
+      if ("@args" =~ /-ctime/) {
+        $ctfile = ".$what.ctime.ub";
+        $ctfile =~ s|/|:|g;
+        if (!(-f $ctfile)) {
+          log_msg(1,"Creating $ctfile");
+          open(CTFILE, "> $ctfile");
+          print CTFILE "meaningless\n";
+          close(CTFILE);
+        }
+        @info = stat($ctfile);
+        if (@info) {
+          $last_t = $info[10];
+          $total_t = int(Time::HiRes::time()) - $last_t;
+          @info = stat($what);
+          $total_delta = @info ? $info[7] : 0;
+          log_msg(1,"Starting from ctime $last_t = $total_t @ $total_delta");
+        }
+      }      
+      do {
+        my $t = Time::HiRes::time;
+        @info = stat($what);
+        $death = $? unless @info;
+        unless ($death) {
+          my $delta = defined($prev)? ($info[7] - $prev): 0;
+          my $rate = '';
+          if (defined($last_t)) {
+            my $dt = $t - $last_t;
+            $total_t += $dt;
+            $total_delta += $delta;
+            $rate = rate_str($total_delta,1024,$total_t,'kbit');
+            $rate .= sprintf(q{[%7.2f]}, ((8 * $delta) / $dt) / 1024.0) if $dt > 0;
+          }
+          $last_t = $t;
+          my $percent = '';
+          my $eta = '';
+          my $iperc = undef;
+          if ($target_size) {
+            my $perc = 100.0 * ($info[7] / $target_size);
+            $iperc = int($perc);
+            $completed=1 if $iperc >= 100;
+            $percent = sprintf(q{%5.1f%% in %s}, $perc, elapsed_string(int($total_t)));
+            if ($iperc >= 100) {
+              $eta = 'ETA: done';
+            } elsif (!$iperc) {
+              $eta = 'ETA: unknown';
+            } else {
+              $eta = 'ETA: '.elapsed_string(((100.0 / $perc) * $total_t) - $total_t);
+            }
+          } else {
+            $percent = '?%';
+          }
+          my $whatstr = $what;
+          if (length($what) > 10) {
+            $whatstr = substr($what,0,7) . '...';
+          }
+          my $msg =
+              sprintf("#%04d %-10s %s %-8d %-8d %s %s %s", $ntimes, $whatstr,
+                      POSIX::strftime(q{%H:%M:%S}, localtime($info[9])),
+                      $info[7], $delta, $rate, $percent, $eta);
+          print "$msg\n";
+          log_msg(1,$msg);
+          last if defined($death) || ($target_size && defined($iperc) && ($iperc >= 100));
+          $prev = $info[7];
+          ++$ntimes;
+          sleep($sleep);
+          $t = Time::HiRes::time;
+          @info = stat($what);
+          $death = $? unless @info;
+        }
+      } while ((-f $what) &&
+               !$completed &&
+               !defined($death) &&
+               (!defined($times) || ($ntimes < $times)));
+      if ($completed && defined($ctfile) && (-f $ctfile)) {
+        log_msg(1,"Removing $ctfile");
+        unlink($ctfile);
+      }
+    } elsif (-d $what) {
+      my $times = $args[2];
+      $times = undef if $times eq '-';
+      my $sleep = $args[2] || 10;
+      my $ntimes = 0;
+      my $death = undef;
+      my($prevent,$prevfiles,$prevndot) = (undef,undef,undef);
+      do {
+        my @info = stat($what) || ($death=$?);
+        unless ($death) {
+          opendir(DIR, $what) || ($death=$?);
+          unless ($death) {
+            my @entries = readdir(DIR);
+            closedir(DIR);
+            my $nent = scalar(@entries);
+            @entries = grep { -f "$what/$_" } @entries;
+            my $nfiles = scalar(@entries);
+            @entries = grep { /^[^\.]/ } @entries;
+            my $nondot = scalar(@entries);
+            my($dent,$dfiles,$dndot) = (0,0,0);
+            if (defined($prevent)) {
+              ($dent,$dfiles,$dndot) =
+              ($nent-$prevent,$nfiles-$prevfiles,$nondot-$prevndot);
+            }
+            printf("#%04d %-20s %4d ents (%4d) %4d files (%4d) %4d nondot (%4d)\n",
+                   $ntimes, $what, $nent, $dent, $nfiles, $dfiles,
+                   $nondot, $dndot);
+            ($prevent,$prevfiles,$prevndot) = ($nent,$nfiles,$nondot);
+            sleep($sleep);
+          }
+        }
+      } while ((-d $what) &&
+               !defined($death) &&
+               (!defined($times) || (++$ntimes < $times)));
+    } else {
+      print "$what is not a file, dude\n";
+    }
+    $grokked = 1;
+  }
+  if (!$grokked && ("@args" =~ /^ddl\s+(\S.*)$/)) {
+    shift @args;
+    my %ddlargs = map {my @tmp=split(/=/,$_,2);push(@tmp,1) unless @tmp==2;@tmp;} @args;
+    augment_hash_from_file(\%ddlargs,$ENV{'HOME'}.'/.ddlrc.ub');
+    my $remote = $ddlargs{'remote'} || die(qq{$P: no remote host specified\n});
+    my($local_ssh,$local_nc,$local_ibs,$local_seek,$local_obs,$nc_wait,
+       $remote_nc,$remote_port,$remote_ibs,$remote_skip,$remote_obs,$watch_sleep,
+       $min_remote_port,$max_remote_port,$remote_sleep,$local_sleep,$inter_watch_sleep) =
+      map {
+        defined($ddlargs{$_}) ?
+            $ddlargs{$_} :
+            (defined($ddlargs{$remote.'_ddl_'.$_}) ?
+             $ddlargs{$remote.'_ddl_'.$_} :
+             $DEFAULTS->{'ddl_'.$_})
+      } qw(local_ssh local_nc local_ibs local_seek local_obs nc_wait
+           remote_nc remote_port remote_ibs remote_skip remote_obs watch_sleep
+           min_remote_port max_remote_port remote_sleep local_sleep inter_watch_sleep);
+    my $remote_file_name = $ddlargs{'remote_file'};
+    my $remote_file = $remote_file_name if $remote_file_name =~ /^\//;
+    unless (defined($remote_file)) {
+      $remote_file = $ddlargs{$remote.'_remote_dir'} || $ddlargs{'remote_dir'} || '.';
+      $remote_file .= '/' . $remote_file_name;
+    }
+    my $local_file_name = $ddlargs{'local_file'} || $remote_file_name;
+    my $counter = 0;
+    my $local_file = $local_file_name if $local_file_name =~ /^\//;
+    unless (defined($local_file)) {
+      $local_file = $ddlargs{'local_dir'} || '.';
+      $local_file .= '/' . $local_file_name;
+    }
+    my $local_file_orig = $local_file;
+#+D    print "## local_file_name=$local_file_name local_file=$local_file local_file_orig=$local_file_orig\n";
+    while ((-f $local_file) && !$ddlargs{'overwrite'}) {
+      $local_file = sprintf(q{%s.%03d},$local_file_orig,++$counter);
+    }
+    my $done = 1;
+    my $running =  ($ddlargs{'run_remote'} || $ddlargs{'run_local'} || $ddlargs{'run_watch'}) ? 1 : 0;
+    my $not = ($ddlargs{'dryrun'} || $ddlargs{'noexec'}) ? 'Not' : '>>>';
+    my $real_size = $ddlargs{'real_size'} || 0;
+    my $max_chunk = $ddlargs{'max_chunk'} || 0;
+    my $grok_log_args = '';
+    if ($ddlargs{'watch_log'}) {
+      $grok_log_args = qq{-l }.$ddlargs{'watch_log'};
+    } elsif ($ddlargs{'watch_autolog'}) {
+      my $logfile = $local_file . '.log';
+      $grok_log_args = qq{-l $logfile};
+    }
+    my $nchunks = undef;
+    my $left_over = undef;
+    my $chunk_num = undef;
+    my $offset = undef;
+    if ($real_size && $max_chunk) {
+      $nchunks = int($real_size / $max_chunk);
+      $left_over = $real_size - ($max_chunk * $nchunks);
+      $chunk_num = 0;
+      $offset = 0;
+      $done = 0;
+      ++$nchunks if $left_over;
+    }
+    srand($ddlargs{'rand_seed'}) if defined($ddlargs{'rand_seed'});
+    do {
+      my $remote_chunk_args = '';
+      my $local_chunk_args = '';
+      my $watch_chunk_args = '';
+      if (defined($chunk_num)) {
+        last if ($offset >= $real_size);
+        $remote_ibs = 1;
+        $remote_skip = $offset;
+        if ($ddlargs{'overwrite'}) {
+          $local_obs = 1;
+          $local_seek = $offset;
+        } else {
+          $local_file = $local_file_orig;
+          $counter = 0;
+          while ((-f $local_file) && !$ddlargs{'overwrite'}) {
+            $local_file = sprintf(q{%s.%03d},$local_file_orig,++$counter);
+          }
+        }
+        my $count = $max_chunk;
+        $count = $left_over if (($offset + $count) > $real_size);
+        $offset += $max_chunk;
+        $remote_chunk_args = qq{count=$count};
+        $watch_chunk_args = qq{$count -ctime};
+        ++$chunk_num;
+        if ($ddlargs{'change_ports'}) {
+          if ($ddlargs{'rand_seed'}) {
+            my $port_off = int(rand(100*$nchunks)) + 1;
+            my $sign = !($port_off & 1) ? -1 : 1;
+            $remote_port += $sign * $port_off;
+          } else {
+            ++$remote_port;
+          }
+          $remote_port = $min_remote_port if $remote_port < 1024;
+          $remote_port = $max_remote_port if $remote_port > 65535;
+        }
+        print "\n## Chunk: $chunk_num of $nchunks\n";
+      } elsif ($real_size) {
+        $watch_chunk_args=qq{$real_size -ctime};
+      }
+      my $remote_cmd =
+          qq{$local_ssh $remote 'dd if="$remote_file" ibs=$remote_ibs skip=$remote_skip obs=$remote_obs $remote_chunk_args | $remote_nc -v -l -p $remote_port'};
+      my $local_cmd=
+          qq{$local_nc -v -w $nc_wait $remote $remote_port | dd ibs=$local_ibs seek=$local_seek obs=$local_obs $local_chunk_args of="$local_file"};
+      my $log_cmd =
+          qq{$0 -v $grok_log_args grok watch $local_file - $watch_sleep $watch_chunk_args};
+      print "# remote:\n$remote_cmd\n# local:\n$local_cmd\n# log:\n$log_cmd\n"
+          if !$running || ($VERBOSE > 1);
+      log_msg(1,qq{Remote: $remote_cmd});
+      log_msg(1,qq{ Local: $local_cmd});
+      log_msg(1,qq{   Log: $log_cmd});
+      my $err;
+      if ($ddlargs{'run_remote'}) {
+        print "# $not Executing: $remote_cmd\n";
+        unless ($not eq 'Not') {
+          system($remote_cmd) == 0
+              or ($err="Remote: Error: $@");
+          if (!defined($err) && $remote_sleep) {
+            print "# Done without errors - sleeping $remote_sleep seconds\n";
+            sleep($remote_sleep);
+          }
+        }
+      } elsif ($ddlargs{'run_local'}) {
+        print "# $not Executing: $local_cmd\n";
+        unless ($not eq 'Not') {
+          if (defined($chunk_num) && ($chunk_num == 1)) {
+            print "# Local end waiting a sec before starting...\n";
+            sleep(3);
+            print "# Okay, starting up for real now...\n";
+          }
+          system($local_cmd) == 0
+              or ($err="Local: Error: $@");
+          if (!defined($err) && $local_sleep) {
+            print "# Done without errors - sleeping $local_sleep seconds\n";
+            sleep($local_sleep);
+          }
+        }
+      } elsif ($ddlargs{'run_watch'}) {
+        print "# $not Executing: $log_cmd\n";
+        unless ($not eq 'Not') {
+          system($log_cmd) == 0
+              or ($err="Log: Error: $@");
+          if (!defined($err) && $inter_watch_sleep) {
+            print "# Done without errors - sleeping $inter_watch_sleep seconds\n";
+            sleep($inter_watch_sleep);
+          }
+        }
+      }
+      if (defined($err)) {
+        print "? $err\n";
+        log_msg(-1,$err);
+      }
+    } while (!$done);
+    $grokked = 1;
+  }
+  if (!$grokked && ("@args" =~ /^($NUMBER)\s+(\S+)\s+to\s+(\S.*)$/)) {
+    my($n,$from,$to) = ($1,$2,$3);
+    my $factor;
+    my $prefix = "  ==> ";
+    if ($HAVE_QUOTE && ($from =~ /[A-Z]{2,3}/) && ($to =~ /[A-Z]{2,3}/)) {
+      my $q = Finance::Quote->new || die qq{Could not initialize Finance::Quote\n};
+      $factor = $q->currency($from, $to);
+      if ($factor) {
+        $prefix = q{  $$> };
+      } else {
+        $factor = undef;
+      }
+    }
+    unless (defined($factor)) {
+      my $from_unit = new Physics::Unit($from);
+      $factor = $from_unit->convert($to);
+    }
+    my $converted = $n * $factor;
+    print "$prefix$n $from -> $converted $to\n";
+    $grokked = 1;
+  }
+  if (!$grokked && ("@args" =~ /^($NUMBER)\s*s(|ecs|econds)$/)) {
+    my $prefix = $QUIET ? '' : ' ==> ';
+    print $prefix.elapsed_string($1)."\n";
+    $grokked = 1;
+  }
+  if (!$grokked &&
+      ("@args" =~ /^(australia|dwsfunds|fidelity|tiaacref|troweprice|europe|canada|usa|nyse|nasdaq|vanguard)\s+(\S.*)$/)) {
+    my($mkt,$list) = ($1,$2);
+    my @stocks = split(/\s+/, uc($list));
+    if (!@stocks) {
+      print "What stocks do you want to see from $mkt?\n";
+    } else {
+      my $q = Finance::Quote->new;
+      my %quotes = $q->fetch($mkt, @stocks);
+      foreach my $stock (@stocks) {
+        printf("  ... %-6s %10s %6.2f (%6.2f -> %6.2f) ^%6.2f (%6.2f) %10.0f\n",
+               map { $quotes{$stock,$_} }
+               qw(symbol date last close open high low volume));
+        print "    > ".$quotes{$stock,"name"}."\n" if $VERBOSE;
+      }
+    }
+    $grokked = 1;
+  }
+  unless ($grokked) {
+    print "grok what?\n";
+  }
+}
+## Main Program ############################################################
+MAIN: {
+  ## Parse CLA
+  $| = 1;
+  my %opts;
+  usage() unless getopts($OPTS, \%opts);
+  usage() if $opts{'h'};
+  usage(undef,1) if $opts{'H'};
+  $VERBOSE = $opts{'V'} || $opts{'v'};
+  $QUIET = $opts{'Q'} || 0;
+  $MAX_XSTRING_DEPTH = $opts{'X'} if defined $opts{'X'};
+  $XSTRING_LEVEL = $opts{'x'} if defined $opts{'x'};
+  $LOG_STDERR = $opts{'S'};
+  $LOG_FILE = $opts{'l'};
+  my $die = $opts{D};
+  $DEFAULTS->{record_file} = $opts{F} if defined $opts{F};
+  log_msg(1,"ub $VERSION starting up");
+  if (!scalar(@ARGV)) {
+    my $in = undef;
+    if (!$opts{'r'} && $HAVE_READLINE) {
+      $in = new Term::ReadLine $P;
+    }
+    ub_loop(\%opts, $in);
+  } else {
+    my $args = "@ARGV";
+    my $arg0 = $ARGV[0];
+    if ($arg0 =~ /^test$/i) {
+#      use Test::Harness qw(&runtests);
+#      die qq{$P: no blib/lib\n} unless (-d "blib/lib");
+#      die qq{$P: test what?\n} unless scalar(@ARGV) > 1;
+#      shift @ARGV;
+#      while (my $t = shift(@ARGV)) {
+#        eval { runtests(qq{t/$t.t}) };
+#        print "test $t: $@\n" if defined $@;
+#      }
+      die qq{test is fu0xrd up\n};
+    } elsif ($arg0 =~ /^grok$/i) {
+      shift @ARGV;
+      grok(@ARGV);
+    } elsif ($args =~ /[+*\-\/%^]/) {
+      my $str = '';
+      foreach my $a (@ARGV) {
+        if ($a =~ /^(\S+)=(\S+)$/) {
+          my($n,$v) = ($1,$2);
+          $n = "\$" . $n unless $n =~ /^\$/;
+          eval "$n=$v";
+          die qq{$n=$v: $@\n} if $@;
+        } else {
+          $str .= ' ' if length $str;
+          $str .= $a;
+        }
+      }
+      do_eval($str,0,$die,undef,0);
+    } else {
+      do_eval($args,0,$die,undef,0);
+    }
+    ub_loop(\%opts) if $opts{L};
+  }
+}
+__END__
+
+=head1 DESCRIPTION
+utility belt.  does arithmetic and ad hoc perl.
+=cut
+
+=head1 VERSION HISTORY
+  0.1.7   10 Nov 05     attila  improved ddl command
+  0.1.6   07 Nov 05     attila  logging for watch
+  0.1.5   05 Nov 05     attila  fix watch command
+  0.1.4   15 Sep 05     attila  added shell mode, \o command
+  0.1.3   21 Dec 04     attila  added timing stuff
+  0.1.0   05 Jul 03     attila  started
+=cut
+
+##
+# Local variables:
+# tab-width: 2
+# perl-indent-level: 2
+# cperl-indent-level: 2
+# indent-tabs-mode: nil
+# comment-column: 40
+# End:
+##

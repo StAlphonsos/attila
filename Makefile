@@ -1,0 +1,6 @@
+# -*- makefile -*-
+#
+
+default: all
+
+all:
