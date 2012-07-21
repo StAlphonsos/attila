@@ -18,4 +18,7 @@
 (global-set-key "\C-cb" 'org-iswitchb)
 (global-set-key "\C-cr" 'org-remember)
 (global-font-lock-mode 1)
+(defun bind-tab-for-org-mode ()
+  (local-set-key "\C-i" 'org-cycle))
 (add-hook 'org-mode-hook 'turn-on-font-lock)
+(add-hook 'org-mode-hook 'bind-tab-for-org-mode)
