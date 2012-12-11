@@ -18,6 +18,7 @@ export FTPMODE=passive
 #export QT_XFT=true
 export K2_WEB_ROOT=/usr/local/apache/vhosts/k2
 export LOCALPYTHONPATH=/var/www-vhosts/localhost.kwantera.com/build/pymodbus
+export MY_VIRTUAL_ENVS=$HOME/virtual
 
 suss_editor () {
   _editor=${EDITOR}

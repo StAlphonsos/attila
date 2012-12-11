@@ -37,28 +37,34 @@ delta_t() {
 ##
 setprompt() {
 #delta_t
-case x"$TERM" in
-  xemacs|xdumb)
-    export PROMPT='[%D{%H:%M:%S%z}] %m:%2~ %i'$PROMPTAIL
-    export RPROMPT=""
-    ;;
-  xcygwin|xeterm|xxterm)
-    export PROMPT='%m %i%B'$PROMPTAIL'%f'%b
-    export RPROMPT="%S[%D{%H:%M:%S%z}]%s"
-    ;;
-  *)
-    export PROMPT='%m %i%B'$PROMPTAIL'%f'%b
-    export RPROMPT="%S[%D{%H:%M:%S%z}]%s"
-#    export PROMPT='%S[%D{%H:%M:%S}]%s %m %i'$PROMPTAIL'%f'
-#    export RPROMPT=""
-    ;;
-esac
-bindkey "^?" backward-delete-char
-bindkey "\e[3~" backward-delete-char
-bindkey -e
-bindkey ' ' magic-space
-setopt AUTO_LIST
-setopt AUTO_MENU
+  venv_=""
+  _venv=""
+  [ ! -z "$VIRTUAL_ENV" ] && {
+    _venv=" {`basename $VIRTUAL_ENV`}"
+    venv_="{`basename $VIRTUAL_ENV`} "
+  }
+  case x"$TERM" in
+    xemacs|xdumb)
+      export PROMPT='[%D{%H:%M:%S%z}]'"${_venv}"' %m:%2~ %i'$PROMPTAIL
+      export RPROMPT=""
+      ;;
+    xcygwin|xeterm|xxterm)
+      export PROMPT='%m %i%B'$PROMPTAIL'%f'%b
+      export RPROMPT="${venv_}%S[%D{%H:%M:%S%z}]%s"
+      ;;
+    *)
+      export PROMPT='%m %i%B'$PROMPTAIL'%f'%b
+      export RPROMPT="${venv_}%S[%D{%H:%M:%S%z}]%s"
+  #    export PROMPT='%S[%D{%H:%M:%S}]%s %m %i'$PROMPTAIL'%f'
+  #    export RPROMPT=""
+      ;;
+  esac
+  bindkey "^?" backward-delete-char
+  bindkey "\e[3~" backward-delete-char
+  bindkey -e
+  bindkey ' ' magic-space
+  setopt AUTO_LIST
+  setopt AUTO_MENU
 }
 
 setprompt
@@ -153,52 +159,61 @@ checkagent() {
 # have; in EMACS, don't do the xtermtitle bit.  Also, set EDITOR and
 # CVSEDITOR appropriately.
 ##
-case "$TERM" in
-  screen*)
-    export EDITOR=zile
-    export CVSEDITOR=zile
-    precmd() {
-      checkagent
-      setprompt
+termsy() {
+  case "$TERM" in
+    screen*)
+      export EDITOR=zile
+      export CVSEDITOR=zile
+      precmd() {
+	checkagent
+	setprompt
+	xtermtitle
+      }
+      preexec() {
+	checkagent
+	setprompt
+	xtermtitle "$1"
+      }
       xtermtitle
-    }
-    preexec() {
-      checkagent
-      setprompt
-      xtermtitle "$1"
-    }
-    xtermtitle
-    stty intr ^C
-    ;;
-  cygwin|xterm*|dtterm|rxvt)
-    export TERM=xterm
-    export EDITOR=zile
-    export CVSEDITOR=zile
-#    export EDITOR=teco
-#    export CVSEDITOR=teco
-    precmd() {
-      checkagent
-      setprompt
-      xtermtitle
-    }
-    preexec() {
-      checkagent
-      setprompt
-      xtermtitle "$1"
-    }
-    xtermtitle ""
-    [ -t 0 ] && stty intr ^C
-    ;;
-  emacs|dumb)
-    export EDITOR=emacsclient
-    export CVSEDITOR=emacsclient
-    export PAGER=cat
-    precmd() {
-      checkagent
-      setprompt
-    }
-    ;;
-esac
+      stty intr ^C
+      ;;
+    cygwin|xterm*|dtterm|rxvt)
+      export TERM=xterm
+      export EDITOR=zile
+      export CVSEDITOR=zile
+  #    export EDITOR=teco
+  #    export CVSEDITOR=teco
+      precmd() {
+	checkagent
+	setprompt
+	xtermtitle
+      }
+      preexec() {
+	checkagent
+	setprompt
+	xtermtitle "$1"
+      }
+      xtermtitle ""
+      [ -t 0 ] && stty intr ^C
+      ;;
+    emacs|dumb)
+      if [ x"$IN_EMACS" = "xt" ]; then
+	  export EDITOR=emacsclient
+	  export CVSEDITOR=emacsclient
+	  export PAGER=cat
+      else
+	  export EDITOR=ed
+	  export CVSEDITOR=ed
+	  export PAGER=cat
+      fi
+      precmd() {
+	checkagent
+	setprompt
+      }
+      ;;
+  esac
+}
+termsy
 
 ##
 # Authentication Fu

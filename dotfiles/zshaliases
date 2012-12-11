@@ -147,4 +147,22 @@ function nscreen {
   env SCREEN_NAME="$*" screen -S "$*"
 }
 alias lscreen='screen -ls'
-alias vpn='sudo openvpn --cd $HOME/personal/v.redyucatan.net/ssenkaew --config client.conf'
+alias vpn='sudo openvpn --cd $HOME/etc/invention --config client.conf'
+alias r00t='ssh root@localhost'
+alias crypt='encfs ~/.Private ~/Private'
+alias uncrypt='fusermount -u ~/Private'
+alias tl='tail -40'
+alias dmt='dmesg|tl'
+
+function activate () {
+  vbase=${MY_VIRTUAL_ENVS-$HOME/virtual}
+  nm="$1"
+  if [ x"$nm" = x ]; then
+    ls -l $HOME/virtual
+  elif [ ! -d $vbase/$nm ]; then
+    echo 'What should I activate?'
+  else
+    source $vbase/$nm/bin/activate
+    echo '[Use the "deactivate" command to pop out of '$nm']'
+  fi
+}

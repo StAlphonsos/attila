@@ -11,6 +11,7 @@
         ("Idea" ?i "* %^{Title}\n  %i\n  %a" "~/notes/Scrib.org" "Ideas")
         ("kWantera" ?k "* %^{Title}\n  %U\n  %i\n  %a" "~/Work/kWantera/notes.org" "Work Notes")
         ("Writing" ?w "* %^{Title}\n  %U\n   %i\n  %a" "~/notes/Scrib.org" "Scribbling")
+        ("Song" ?s "* %^{Title}\n  %U\n   %i\n  %a" "~/notes/Songs.org" "Songs")
         ("Dialogue" ?d "* %^{Title}\n  %U\n   %i" "~/notes/Dialogues.org" "Dialogues")))
 (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
 (global-set-key "\C-cl" 'org-store-link)
