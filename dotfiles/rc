@@ -1,0 +1,4 @@
+#!/bin/sh
+##
+/home/attila/bin/psmap -n emacs || emacs --daemon
+exit 0
