@@ -1,0 +1,8 @@
+#!/bin/sh
+##
+#(tail -16 ~/logs/life.log | perl -lpe 'END { print "\n" x 8 }') | \
+#  aosd_cat -n monospace -p 1 -x 0 -y 40 -l 6 -o 20 -f 20 -u 800
+osdtail ~/logs/life.log &
+[ -f ~/logs/work.log ] && (osdtail ~/logs/work.log 4 red 7 0 0 3 &)
+[ -f ~/logs/monitor.log ] && (osdtail ~/logs/monitor.log 8 blue 5 0 0 4 &)
+wait

@@ -1,0 +1,44 @@
+#!/bin/sh
+##
+[ x"$1" = x ] && {
+  echo '   usage: osdtail filename [natural-size [color [position [xoff [yoff [winsize]]]]]]'
+  echo 'defaults:                   8             green  1         0     40    6'
+  exit 1
+}
+fn=$1
+path=$fn
+[ ! -f "$fn" -a -f "$HOME/logs/$fn" ] && path="$HOME/logs/$fn"
+shift
+natsize=8
+[ x"$1" != x ] && {
+  natsize=$1
+  shift
+}
+twotimes=`expr $natsize \* 2`
+color=green
+[ x"$1" != x ] && {
+  color=$1
+  shift
+}
+pos=1
+[ x"$1" != x ] && {
+  pos=$1
+  shift
+}
+xoff=0
+[ x"$1" != x ] && {
+  xoff=$1
+  shift
+}
+yoff=40
+[ x"$1" != x ] && {
+  yoff=$1
+  shift
+}
+winsize=6
+[ x"$1" != x ] && {
+  winsize=$1
+  shift
+}
+(tail -$twotimes $path | perl -lpe 'END { print "\n" x '$winsize' }') | \
+  aosd_cat -n monospace -p $pos -x $xoff -y $yoff -l $winsize -R $color -o 20 -f 20 -u 800

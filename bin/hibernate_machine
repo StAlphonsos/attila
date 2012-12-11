@@ -1,0 +1,3 @@
+#!/bin/sh
+##
+zenity --question --text="Really hibernate?" && gksudo pm-hibernate

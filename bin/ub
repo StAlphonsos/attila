@@ -4,7 +4,7 @@
 #
 # (C) 1997-2005 by attila <attila@stalphonsos.com>.  all rights reserved.
 #
-# Time-stamp: <2011-08-01 09:04:01 attila@stalphonsos.com>
+# Time-stamp: <2012-11-16 11:44:42 attila@stalphonsos.com>
 # $Id: ub,v 1.4 2005/12/21 01:08:41 attila Exp $
 #
 # author: attila <attila@stalphonsos.com>
@@ -1187,12 +1187,12 @@ sub grok {
   if (!$grokked && ("@args" =~ /^($NUMBER)\s+(\S+)\s+to\s+(\S.*)$/)) {
     my($n,$from,$to) = ($1,$2,$3);
     my $factor;
-    my $prefix = "  ==> ";
+    my $prefix = "==> ";
     if ($HAVE_QUOTE && ($from =~ /[A-Z]{2,3}/) && ($to =~ /[A-Z]{2,3}/)) {
       my $q = Finance::Quote->new || die qq{Could not initialize Finance::Quote\n};
       $factor = $q->currency($from, $to);
       if ($factor) {
-        $prefix = q{  $$> };
+        $prefix = q{$$> };
       } else {
         $factor = undef;
       }
@@ -1211,8 +1211,9 @@ sub grok {
     $grokked = 1;
   }
   if (!$grokked &&
-      ("@args" =~ /^(australia|dwsfunds|fidelity|tiaacref|troweprice|europe|canada|usa|nyse|nasdaq|vanguard)\s+(\S.*)$/)) {
+      ("@args" =~ /^(australia|dwsfunds|fidelity|tiaacref|troweprice|europe|canada|usa|nyse|nasdaq|vanguard|price|stock)\s+(\S.*)$/)) {
     my($mkt,$list) = ($1,$2);
+    $mkt = 'usa' if $mkt =~ '^(price|stock)$';
     my @stocks = split(/\s+/, uc($list));
     if (!@stocks) {
       print "What stocks do you want to see from $mkt?\n";
@@ -1220,10 +1221,10 @@ sub grok {
       my $q = Finance::Quote->new;
       my %quotes = $q->fetch($mkt, @stocks);
       foreach my $stock (@stocks) {
-        printf("  ... %-6s %10s %6.2f (%6.2f -> %6.2f) ^%6.2f (%6.2f) %10.0f\n",
+        printf("... %-6s %10s %6.2f (%6.2f -> %6.2f) ^%6.2f (%6.2f) %10.0f\n",
                map { $quotes{$stock,$_} }
                qw(symbol date last close open high low volume));
-        print "    > ".$quotes{$stock,"name"}."\n" if $VERBOSE;
+        print "  > ".$quotes{$stock,"name"}."\n" if $VERBOSE;
       }
     }
     $grokked = 1;
