@@ -4,7 +4,7 @@
 #
 # (C) 1997-2005 by attila <attila@stalphonsos.com>.  all rights reserved.
 #
-# Time-stamp: <2012-11-16 11:44:42 attila@stalphonsos.com>
+# Time-stamp: <2013-03-12 16:21:44 attila@stalphonsos.com>
 # $Id: ub,v 1.4 2005/12/21 01:08:41 attila Exp $
 #
 # author: attila <attila@stalphonsos.com>
@@ -83,11 +83,11 @@ $DEFAULTS =
 $OVERWRITE_RECORD = 0;
 $MAX_XSTRING_DEPTH = 10;
 $XSTRING_LEVEL = undef;
-$VERSION = '0.1.8';
+$VERSION = '0.1.9';
 $DESCR = 'attila\'s utility belt';
 $AUTHOR = 'attila <attila@stalphonsos.com>';
 $VERBOSE = 0;
-$OPTS = 'hHvV:x:X:LDRF:OrTE:sl:SQ';
+$OPTS = 'hHvV:x:X:LDRF:OrTE:sl:SQI:';
 $COPYRIGHT = '(C) 2003-%d by attila <attila@stalphonsos.com>';
 $ARGS_DESC = "perlexp|cmd...";
 $LOG_STDERR = 0;
@@ -114,6 +114,7 @@ $USAGE = <<__UsAGe__;
            -l x  send a log to file x
            -S    send a log to stderr
            -Q    be vewy quiet
+           -I x  add x to @INC; can be comma-separated
 __UsAGe__
 %LOOP_HELP =
     ( 'q' => <<__CmdH_q__,
@@ -675,7 +676,7 @@ sub ub_loop {
       }
       $buf = '';
     } else {
-      if (/^(.*)\\(q|b|c|g|e|t|T|l|r|R|O|o|s|d|L|E|v|V|\?)(\s*|\s+\S.*)$/i) {
+      if (/^(.*)\\(q|b|c|g|G|e|t|T|l|r|R|O|o|s|d|L|E|v|V|\?)(\s*|\s+\S.*)$/i) {
         my($pref,$cmd,$cargs) = ($1,$2,$3);
         last                                    if $cmd eq 'q';
         $cargs =~ s/^\s+//;
@@ -1241,6 +1242,9 @@ MAIN: {
   usage() unless getopts($OPTS, \%opts);
   usage() if $opts{'h'};
   usage(undef,1) if $opts{'H'};
+  if ($opts{'I'}) {
+    unshift(@INC,$_) foreach (split(/,/,$opts{'I'}));
+  }
   $VERBOSE = $opts{'V'} || $opts{'v'};
   $QUIET = $opts{'Q'} || 0;
   $MAX_XSTRING_DEPTH = $opts{'X'} if defined $opts{'X'};
@@ -1272,6 +1276,11 @@ MAIN: {
     } elsif ($arg0 =~ /^grok$/i) {
       shift @ARGV;
       grok(@ARGV);
+    } elsif ($arg0 =~ /^run$/i) {
+      shift @ARGV;
+      my $fn = shift(@ARGV);
+      $fn .= ".pl" unless (-f $fn);
+      do $fn;
     } elsif ($args =~ /[+*\-\/%^]/) {
       my $str = '';
       foreach my $a (@ARGV) {
@@ -1299,6 +1308,8 @@ utility belt.  does arithmetic and ad hoc perl.
 =cut
 
 =head1 VERSION HISTORY
+  0.1.9   12 Mar 13     attila  added -I
+  0.1.8   11 Dec 12     attila  minor cleanup
   0.1.7   10 Nov 05     attila  improved ddl command
   0.1.6   07 Nov 05     attila  logging for watch
   0.1.5   05 Nov 05     attila  fix watch command
