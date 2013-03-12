@@ -4,7 +4,7 @@
 #
 # (C) 1997-2005 by attila <attila@stalphonsos.com>.  all rights reserved.
 #
-# Time-stamp: <2013-03-12 16:21:44 attila@stalphonsos.com>
+# Time-stamp: <2013-03-12 16:23:31 attila@stalphonsos.com>
 # $Id: ub,v 1.4 2005/12/21 01:08:41 attila Exp $
 #
 # author: attila <attila@stalphonsos.com>
@@ -1242,6 +1242,9 @@ MAIN: {
   usage() unless getopts($OPTS, \%opts);
   usage() if $opts{'h'};
   usage(undef,1) if $opts{'H'};
+  if (defined($ENV{'UB_PATH'})) {
+    unshift(@INC,$_) foreach (split(/,/,$ENV{'UB_PATH'}))
+  }
   if ($opts{'I'}) {
     unshift(@INC,$_) foreach (split(/,/,$opts{'I'}));
   }
@@ -1308,7 +1311,7 @@ utility belt.  does arithmetic and ad hoc perl.
 =cut
 
 =head1 VERSION HISTORY
-  0.1.9   12 Mar 13     attila  added -I
+  0.1.9   12 Mar 13     attila  added -I, UB_PATH envar, run
   0.1.8   11 Dec 12     attila  minor cleanup
   0.1.7   10 Nov 05     attila  improved ddl command
   0.1.6   07 Nov 05     attila  logging for watch
