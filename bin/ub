@@ -4,7 +4,7 @@
 #
 # (C) 1997-2005 by attila <attila@stalphonsos.com>.  all rights reserved.
 #
-# Time-stamp: <2013-03-12 16:23:31 attila@stalphonsos.com>
+# Time-stamp: <2013-03-13 11:29:03 attila@stalphonsos.com>
 # $Id: ub,v 1.4 2005/12/21 01:08:41 attila Exp $
 #
 # author: attila <attila@stalphonsos.com>
@@ -21,8 +21,10 @@ use vars
        $COPYRIGHT $ARGS_DESC $LOG_STDERR $LOG_FILE $LOG_FP $LOG_TSTAMP_FMT
        $DEFAULTS @_RESULT $MAX_XSTRING_DEPTH $XSTRING_LEVEL $_INPUT
        $OVERWRITE_RECORD $HAVE_READLINE $HAVE_POD_PERLDOC $HAVE_UNITS
-       $HAVE_QUOTE $HAVE_TIME_HIRES $NUMBER %LOOP_HELP $QUIET
+       $HAVE_QUOTE $HAVE_TIME_HIRES $NUMBER %LOOP_HELP $QUIET $RUNNING
       );
+
+$RUNNING = 0;
 
 BEGIN {
   $ORIGINAL_SCRIPT = $0;
@@ -1283,7 +1285,9 @@ MAIN: {
       shift @ARGV;
       my $fn = shift(@ARGV);
       $fn .= ".pl" unless (-f $fn);
-      do $fn;
+      $RUNNING = 1;
+      do_eval(qq{do "$fn"},0,$die,undef,0);
+      $RUNNING = 0;
     } elsif ($args =~ /[+*\-\/%^]/) {
       my $str = '';
       foreach my $a (@ARGV) {
