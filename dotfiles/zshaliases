@@ -147,7 +147,7 @@ function nscreen {
   env SCREEN_NAME="$*" screen -S "$*"
 }
 alias lscreen='screen -ls'
-alias vpn='sudo openvpn --cd $HOME/etc/invention --config client.conf'
+alias vpn='sudo openvpn --cd $HOME/personal/vpn --config client.conf'
 alias r00t='ssh root@localhost'
 alias crypt='encfs ~/.Private ~/Private'
 alias uncrypt='fusermount -u ~/Private'
@@ -166,3 +166,5 @@ function activate () {
     echo '[Use the "deactivate" command to pop out of '$nm']'
   fi
 }
+
+alias kssh='ssh -F $HOME/.ssh/kwantera.conf'
