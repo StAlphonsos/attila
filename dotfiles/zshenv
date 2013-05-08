@@ -19,6 +19,7 @@ export FTPMODE=passive
 export K2_WEB_ROOT=/usr/local/apache/vhosts/k2
 export LOCALPYTHONPATH=/var/www-vhosts/localhost.kwantera.com/build/pymodbus
 export MY_VIRTUAL_ENVS=$HOME/virtual
+export UB_PATH=$HOME/lib/perl
 
 suss_editor () {
   _editor=${EDITOR}
@@ -58,4 +59,3 @@ function delimit () {
   ulimit -n unlimited
   ulimit -a
 }
-export QUEX_PATH=/home/attila/src/quex-0.60.2
