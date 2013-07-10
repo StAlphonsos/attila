@@ -153,6 +153,7 @@ alias crypt='encfs ~/.Private ~/Private'
 alias uncrypt='fusermount -u ~/Private'
 alias tl='tail -40'
 alias dmt='dmesg|tl'
+alias kwt-vpn='sudo openvpn --cd $HOME/Work/kWantera/crypto --config client.conf'
 
 function activate () {
   vbase=${MY_VIRTUAL_ENVS-$HOME/virtual}
