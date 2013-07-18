@@ -1,0 +1,18 @@
+#!/bin/sh
+##
+WWAN_CON_UUID=${WWAN_CON_UUID-3f1fd0d1-69c0-4594-9c34-d6e0944923c2}
+WWAN_IFACE=${WWAN_IFACE-ppp0}
+#
+gsm_dev="`nmcli dev | grep gsm`"
+is_up="`ifconfig $WWAN_IFACE 2>/dev/null | grep UP`"
+bring_up=0
+if [ x"${is_up}" = x -a x"${gsm_dev}" != x ]; then
+    echo $0: gsm device appears in list and we are NOT up
+    nmcli nm wwan on
+else
+    if [ x"${is_up}" != x ]; then
+        echo `ifconfig $WWAN_IFACE 2>/dev/null | grep inet`
+    else
+        echo WE ARE DOWN CAPTAIN
+    fi
+fi
