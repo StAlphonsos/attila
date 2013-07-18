@@ -12,12 +12,14 @@ default: all
 
 all clean distclean:
 
-install: all $(LIBDIR)
+install: all $(LIBDIR)/perl
 	@(for f in $(TEMPLATES) $(FILES) $(LIBPERL); do $(FAKE) $(INSTALL) $$f $(LIBDIR)/$$f; done)
 
-uninstall: $(LIBDIR)
+uninstall: $(LIBDIR)/perl
 	@echo No uninstall for dotfiles
 
-$(LIBDIR): $(LIBDIR)
-	$(FAKE) $(INSTALL_D) $(LIBDIR)
+$(LIBDIR)/perl: $(LIBDIR)
 	$(FAKE) $(INSTALL_D) $(LIBDIR)/perl
+
+$(LIBDIR):
+	$(FAKE) $(INSTALL_D) $(LIBDIR)

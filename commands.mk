@@ -8,3 +8,6 @@ LN?=ln
 INSTALL?=install -vC
 INSTALL_D?=install -vd
 RM=rm
+TAR?=tar
+TAR_CF?=$(TAR) cf
+TAR_XF?=$(TAR) xf

@@ -1,5 +1,15 @@
 # -*- makefile -*-
 
+S?=..
+include $(S)/settings.mk
+include $(S)/commands.mk
+
 default: all
 
-all install uninstall clean distclean:
+all uninstall clean distclean:
+
+install: $(EMACSDIR)
+	@($(FAKE) $(TAR_CF) - lisp) | (cd $(EMACSDIR); $(FAKE) $(TAR_XF) -)
+
+$(EMACSDIR):
+	$(FAKE) $(INSTALL_D) $(EMACSDIR)
