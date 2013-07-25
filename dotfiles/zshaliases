@@ -1,4 +1,4 @@
-# attila zsh setup -*- mode:shell-script; indent-tabs-mode:nil -*-
+# attila zsh setup -*- mode:sh; indent-tabs-mode:nil; sh-indentation:2 -*-
 #
 function psk () { psmap -v "$*" kill }
 function psk9 () { psmap -v "$*" kill -9 }

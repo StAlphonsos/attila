@@ -1,4 +1,4 @@
-## attila's zsh setup
+## attila's zsh setup -*- mode:sh; indent-tabs-mode:nil; sh-indentation:2 -*-
 
 [ -f $HOME/.zshenv ] && source $HOME/.zshenv
 
@@ -43,9 +43,23 @@ setprompt() {
     _venv=" {`basename $VIRTUAL_ENV`}"
     venv_="{`basename $VIRTUAL_ENV`} "
   }
+  _branch=""
+  git_branch=""
+  git_branch_=""
+  dirty=""
+  [ -x /usr/bin/git -o -x /usr/local/bin/git -o -x $HOME/bin/git ] && {
+    _branch="`git status -sb 2>/dev/null | sed -e '2,$d' -e 's/^##[ ]*//'`"
+    _dirty="`git status -sb 2>/dev/null | wc -l`"
+    [ x"$_branch" != x ] && {
+      [ "${_dirty}" != 1 ] && dirty='*'
+      git_branch="($_branch${dirty})"
+      git_branch_="${git_branch} "
+    }
+  }
+  A_GIT_BRANCH="${git_branch}"
   case x"$TERM" in
     xemacs|xdumb)
-      export PROMPT='[%D{%H:%M:%S%z}]'"${_venv}"' %m:%2~ %i'$PROMPTAIL
+      export PROMPT='[%D{%H:%M:%S%z}]'"${_venv}"' %2~${git_branch} %i'$PROMPTAIL
       export RPROMPT=""
       ;;
     xcygwin|xeterm|xxterm)
@@ -103,8 +117,9 @@ xtermtitle() {
     case x$TERM in
       xxterm*|xrxvt)
         if [ x"$1" = x ]; then
-          xtitle "`print -P '[z] %n@%m [%l] %2~'`"
-          xicontitle "`print -P '[z] %n@%m [%l] %2~'`"
+          tit=`print -P "[z] %n@%m [%l] %2~${A_GIT_BRANCH}"`
+          xtitle "${tit}"
+          xicontitle "${tit}"
         else
           xtitle "`print -P '[%m] $1'`"
           xicontitle "`print -P '[%m] $1'`"
@@ -113,7 +128,8 @@ xtermtitle() {
       xscreen)
         if [ x"$1" = x ]; then
           if [ x"$ZT" = x ]; then
-            screen_title.pl "`print -P '[z] %2~'`"
+            tit=`print -P "[z] %n@%m [%l] %2~${A_GIT_BRANCH}"`
+            screen_title.pl "${tit}"
           else
             screen_title.pl "[z] $ZT"
           fi

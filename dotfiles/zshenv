@@ -1,3 +1,4 @@
+# -*- mode:sh; sh-indentation:2; indent-tabs-mode:nil -*-
 export PATH=$HOME/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/usr/local/apache/bin:/usr/X11R6/bin:/usr/X11R6/sbin:/bin:/sbin:/usr/games
 export SURFRAW_browser=w3m
 export CVS_RSH=ssh
