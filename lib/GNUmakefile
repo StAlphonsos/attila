@@ -1,8 +1,9 @@
 # -*- makefile -*-
 
 S?=..
-include $(S)/settings.mk
-include $(S)/commands.mk
+MM?=gnumake
+include $(S)/$(MM)/settings.mk
+include $(S)/$(MM)/commands.mk
 
 TEMPLATES?=template.*
 FILES?=*.au *.png Utils.pm

@@ -1,8 +1,9 @@
 # -*- makefile -*-
 
 S?=..
-include $(S)/settings.mk
-include $(S)/commands.mk
+MM?=gnumake
+include $(S)/$(MM)/settings.mk
+include $(S)/$(MM)/commands.mk
 
 DOTFILES?=bashrc emacs profile rc screenrc zshaliases zshenv zshrc
 XFILES?=Xdefaults xsessiorc

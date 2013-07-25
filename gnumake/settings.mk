@@ -1,5 +1,7 @@
 # -*- makefile -*-
 
+MM?=gnumake
+
 S?=$(shell pwd)
 H?=$(HOME)
 BINDIR?=$(H)/bin

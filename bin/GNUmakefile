@@ -2,8 +2,9 @@
 #
 
 S?=..
-include $(S)/settings.mk
-include $(S)/commands.mk
+MM?=gnumake
+include $(S)/$(MM)/settings.mk
+include $(S)/$(MM)/commands.mk
 
 SCRIPTS?=auto-tunnel cutbuf deagent dotdist.sh emax finfo life mktunnel my_ip neagent nm-wwan-stomp nsopen numbers open_cutbuffer open_cutbuffer_tab osdtail psmap qs reagent scraper screen_title.pl ts ub xmlpp
 BINARIES?=xtitle xicontitle xalltitles
