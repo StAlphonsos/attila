@@ -59,7 +59,7 @@ setprompt() {
   A_GIT_BRANCH="${git_branch}"
   case x"$TERM" in
     xemacs|xdumb)
-      export PROMPT='[%D{%H:%M:%S%z}]'"${_venv}"' %2~${git_branch} %i'$PROMPTAIL
+      export PROMPT='[%D{%H:%M:%S%z}]'"${_venv}"' ${git_branch}%2~ %i'$PROMPTAIL
       export RPROMPT=""
       ;;
     xcygwin|xeterm|xxterm)
@@ -117,7 +117,7 @@ xtermtitle() {
     case x$TERM in
       xxterm*|xrxvt)
         if [ x"$1" = x ]; then
-          tit=`print -P "[z] %n@%m [%l] %2~${A_GIT_BRANCH}"`
+          tit=`print -P "[z] %n@%m [%l] ${A_GIT_BRANCH}%2~"`
           xtitle "${tit}"
           xicontitle "${tit}"
         else
@@ -128,7 +128,7 @@ xtermtitle() {
       xscreen)
         if [ x"$1" = x ]; then
           if [ x"$ZT" = x ]; then
-            tit=`print -P "[z] %n@%m [%l] %2~${A_GIT_BRANCH}"`
+            tit=`print -P "[z] %n@%m [%l] ${A_GIT_BRANCH}%2~"`
             screen_title.pl "${tit}"
           else
             screen_title.pl "[z] $ZT"
