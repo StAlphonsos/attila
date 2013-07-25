@@ -2,7 +2,7 @@
 
 MM?=bsdmake
 
-S?=$(shell pwd)
+S!=pwd
 H?=$(HOME)
 BINDIR?=$(H)/bin
 LIBDIR?=$(H)/lib
