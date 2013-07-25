@@ -1,0 +1,26 @@
+# -*- makefile -*-
+
+S?=..
+MM?=bsdmake
+.include "$(S)/$(MM)/settings.mk"
+.include "$(S)/$(MM)/commands.mk"
+
+TEMPLATES?=template.*
+FILES?=*.au *.png Utils.pm
+LIBPERL?=perl/*.p[lm]
+
+default: all
+
+all clean distclean:
+
+install: all $(LIBDIR)/perl
+	@(for f in $(TEMPLATES) $(FILES) $(LIBPERL); do $(FAKE) $(INSTALL) $$f $(LIBDIR)/$$f; done)
+
+uninstall: $(LIBDIR)/perl
+	@echo No uninstall for dotfiles
+
+$(LIBDIR)/perl: $(LIBDIR)
+	$(FAKE) $(INSTALL_D) $(LIBDIR)/perl
+
+$(LIBDIR):
+	$(FAKE) $(INSTALL_D) $(LIBDIR)
