@@ -21,6 +21,7 @@ export K2_WEB_ROOT=/usr/local/apache/vhosts/k2
 export LOCALPYTHONPATH=/var/www-vhosts/localhost.kwantera.com/build/pymodbus
 export MY_VIRTUAL_ENVS=$HOME/virtual
 export UB_PATH=$HOME/lib/perl
+export K=$HOME/Work/kWantera
 
 suss_editor () {
   _editor=${EDITOR}
