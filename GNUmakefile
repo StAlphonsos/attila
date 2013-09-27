@@ -8,7 +8,7 @@ SUBDIRS?=bin lib dotfiles emacs
 MAKESYS?=bsdmake BSDmakefile gnumake GNUmakefile
 
 DIST_NAME=attila_env
-DIST_VERS=1.0
+DIST_VERS=$(shell cat VERSION)
 DIST_TMP?=$(DIST_NAME)-$(DIST_VERS)
 DIST_LIST?=$(MAKESYS) $(SUBDIRS)
 DIST_TAR?=$(DIST_NAME)-$(DIST_VERS).tar
