@@ -4,7 +4,7 @@
 #
 # (C) 1997-2005 by attila <attila@stalphonsos.com>.  all rights reserved.
 #
-# Time-stamp: <2013-03-13 11:29:03 attila@stalphonsos.com>
+# Time-stamp: <2013-10-10 09:29:36 attila@stalphonsos.com>
 # $Id: ub,v 1.4 2005/12/21 01:08:41 attila Exp $
 #
 # author: attila <attila@stalphonsos.com>
@@ -403,7 +403,7 @@ sub print_result {
   if ($rstr =~ /\n/) {
     print "\n$rstr\n";
   } else {
-    print " $rstr\n";
+    print "$rstr\n";
   }
 }
 ##
