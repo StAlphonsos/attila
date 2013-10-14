@@ -1,4 +1,4 @@
-#!/usr/bin/zsh
+#!zsh
 #
 [ x$LOCALHOME = x ] && LOCALHOME=$HOME
 #echo '[ Prepare: LOCALHOME='$LOCALHOME' ]'
