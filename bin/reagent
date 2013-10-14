@@ -1,5 +1,5 @@
-#!zsh
-#
+#!/bin/sh
+
 [ x$LOCALHOME = x ] && LOCALHOME=$HOME
 #echo '[ Prepare: LOCALHOME='$LOCALHOME' ]'
 if [ x$SSH_AGENT_PID = x -a x"$*" = "x"  ]; then
