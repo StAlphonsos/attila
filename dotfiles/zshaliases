@@ -142,6 +142,7 @@ alias worklog='nb -b /home/attila/public_html/worklog'
 alias lytix-vpn='sudo openvpn --cd $HOME/Work/Lytix/Crypto --config lytix.conf'
 alias lytix-vpn2='sudo openvpn --cd $HOME/Work/Lytix/Crypto/LytixVPN2_generic_sean-levy --config LytixVPN2.conf'
 alias now="date +'%^a %d-%^b-%Y %T'"
+alias isodate="date +'%Y-%m-%dT%H:%M:%S%z'"
 
 function nscreen {
   env SCREEN_NAME="$*" screen -S "$*"
