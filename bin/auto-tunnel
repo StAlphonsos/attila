@@ -1,4 +1,4 @@
-#!/usr/bin/zsh
+#!zsh
 #
 #H=/home/$LOGNAME
 #V=${VERBOSE-0}
