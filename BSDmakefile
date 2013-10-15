@@ -2,6 +2,7 @@
 #
 
 .include "bsdmake/settings.mk"
+.include "bsdmake/commands.mk"
 
 SUBDIRS?=bin lib dotfiles emacs
 MAKESYS?=bsdmake BSDmakefile gnumake GNUmakefile
