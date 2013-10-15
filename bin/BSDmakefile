@@ -19,7 +19,7 @@ xicontitle: xtitle
 	-$(FAKE) $(LN) -s xtitle xicontitle
 
 xalltitles: xtitle
-	-$(FAKE) $(LN) -x xtitle xalltitles
+	-$(FAKE) $(LN) -s xtitle xalltitles
 
 install: $(BINDIR) all
 	@(for f in $(SCRIPTS) $(BINARIES); do $(FAKE) $(INSTALL) $$f $(BINDIR); done)
