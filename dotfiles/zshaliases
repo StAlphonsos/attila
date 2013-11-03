@@ -63,6 +63,7 @@ alias zxvf="tar zxvf"
 alias tvf="tar tvf"
 alias xvf="tar xvf"
 alias lart="ls -lart"
+alias lsd="ls -d"
 alias cvz='cvs -z 9'
 alias zudo='sudo zsh'
 #alias vi=vile
