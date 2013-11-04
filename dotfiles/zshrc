@@ -49,7 +49,8 @@ setprompt() {
   dirty=""
   [ -x /usr/bin/git -o -x /usr/local/bin/git -o -x $HOME/bin/git ] && {
     _branch="`git status -sb 2>/dev/null | sed -e '2,$d' -e 's/^##[ ]*//'`"
-    _dirty="`git status -sb 2>/dev/null | wc -l`"
+    _dirty="expr 0 + `git status -sb 2>/dev/null | wc -l`"
+    _dirty=`eval $_dirty`
     [ x"$_branch" != x ] && {
       [ "${_dirty}" != 1 ] && dirty='*'
       git_branch="($_branch${dirty})"
