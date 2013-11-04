@@ -194,7 +194,12 @@ checkagent() {
 # have; in EMACS, don't do the xtermtitle bit.  Also, set EDITOR and
 # CVSEDITOR appropriately.
 ##
+
+settsy() {
+  ((stty -a 2>&1) | grep -q kerninfo) && stty kerninfo
+}
 termsy() {
+  settsy
   case "$TERM" in
     screen*)
       export EDITOR=zile
