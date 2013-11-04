@@ -145,7 +145,7 @@ alias lytix-vpn2='sudo openvpn --cd $HOME/Work/Lytix/Crypto/LytixVPN2_generic_se
 if [ x"$IS_LINUX" = "xt" ]; then
   alias now="date +'%^a %d-%^b-%Y %T'"
 else
-  alias now="date +'%a %d-%b-%Y %T'"
+  alias now="date +'%a %d-%b-%Y %T' | tr a-z A-Z"
 fi
 alias isodate="date +'%Y-%m-%dT%H:%M:%S%z'"
 
