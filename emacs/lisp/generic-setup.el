@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2012-06-27 12:11:54 attila@stalphonsos.com>
+;;; Time-stamp: <2013-11-10 17:55:51 attila@stalphonsos.com>
 ;;;
 ;;; Generic EMACS setup fu, mainly globals and other random nonsense
 ;;;
@@ -41,8 +41,8 @@
 (setq Info-directory-list (append (list (expand-file-name "~/emacs/info"))
                                   Info-default-directory-list))
 (setq diary-file "~/personal/diary")
-(setq explicit-shell-file-name "/usr/bin/zsh"
-      explicit-zsh-args '("-l"))
+;(setq explicit-shell-file-name "/usr/bin/zsh"
+;      explicit-zsh-args '("-l"))
 ;; Transparency
 (set-frame-parameter (selected-frame) 'alpha '(78 50))
 (add-to-list 'default-frame-alist '(alpha 78 50))
