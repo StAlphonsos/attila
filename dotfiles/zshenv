@@ -22,7 +22,10 @@ export LOCALPYTHONPATH=/var/www-vhosts/localhost.kwantera.com/build/pymodbus
 export MY_VIRTUAL_ENVS=$HOME/virtual
 export UB_PATH=$HOME/lib/perl
 export K=$HOME/Work/kWantera
-
+case `uname` in
+  .*[lL]inux.*) export IS_LINUX=t ;;
+  *) export IS_LINUX=f ;;
+esac
 suss_editor () {
   _editor=${EDITOR}
   _emacsclient="`which emacsclient`"

@@ -1,12 +1,13 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2013-11-10 17:55:51 attila@stalphonsos.com>
+;;; Time-stamp: <2013-11-10 17:56:43 attila@stalphonsos.com>
 ;;;
 ;;; Generic EMACS setup fu, mainly globals and other random nonsense
 ;;;
 (require 'info)
 (eval-when-compile (require 'cl))
 
+(setenv "IN_EMACS" "t")
 (put 'narrow-to-region 'disabled nil) ;I don't think this is current anymore
 (put 'eval-expression 'disabled nil)    ;  nor this, but what the hell
 (put 'narrow-to-page 'disabled nil)     ;narrow-to-page rules
@@ -54,3 +55,8 @@
       (set-frame-parameter nil 'alpha '(100 100))
     (set-frame-parameter nil 'alpha '(78 50))))
 (global-set-key (kbd "C-c t") 'toggle-transparency)
+;; A keyboard macro to reset EMACS' SSH_AUTH_SOCK envar from the value
+;; stashed in ~/.ssh/agent_info by my zsh ssh fu.  You have to run it
+;; once before you try to ssh anywhere via M-x ssh
+(fset 'reset-ssh-auth-sock
+   [?\C-x ?2 ?\C-x ?\C-f ?~ ?/ ?. ?s ?s ?h ?/ ?a ?g ?e ?n ?t ?_ ?i ?n ?f ?o return ?\C-  ?\C-s ?= ?\C-m ?\C-b ?\M-w ?\C-x ?o ?\( ?s ?e ?t ?e ?n ?v ?  ?\" ?\C-y ?\" ?  ?\C-x ?o ?\C-f ?\C-  ?\C-e ?\M-w ?\C-x ?o ?\" ?\C-y ?\" ?\) ?\C-j ?\C-x ?o ?\C-x ?k return ?\C-x ?1])
