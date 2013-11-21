@@ -6,7 +6,7 @@ MM?=gnumake
 include $(S)/$(MM)/settings.mk
 include $(S)/$(MM)/commands.mk
 
-SCRIPTS?=auto-tunnel cutbuf deagent dotdist.sh emax finfo life mktunnel my_ip neagent nm-wwan-stomp nsopen numbers open_cutbuffer open_cutbuffer_tab osdtail psmap qs reagent scraper screen_title.pl ts ub xmlpp
+SCRIPTS?=auto-tunnel cutbuf deagent dotdist.sh emax finfo life mktunnel my_ip neagent nm-wwan-stomp nsopen numbers open_cutbuffer open_cutbuffer_tab osdtail psmap qs reagent scraper screen_title.pl ts ub xmlpp scrape_telmex_modem
 BINARIES?=xtitle xicontitle xalltitles
 
 default: all

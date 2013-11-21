@@ -64,3 +64,5 @@ function delimit () {
   ulimit -n unlimited
   ulimit -a
 }
+
+[ -f $HOME/.zshenv_local ] && source $HOME/.zshenv_local

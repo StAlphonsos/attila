@@ -1,0 +1,122 @@
+#!/usr/bin/env python
+# -*- mode:python; tab-width:4; indent-tabs-mode:nil; py-indent-offset:4 -*-
+##
+
+"""
+    scrape_telmex_modem
+    ~~~~~~~~~~~~~~~~~~~
+
+    Scrape data from a 2wire DSL modem as fielded by Telmex in Mexico.
+"""
+
+import os
+import sys
+import requests
+from optparse import OptionParser
+from pprint import pprint
+from bs4 import BeautifulSoup
+
+DEFAULT_USERNAME = os.environ.get('TELMEX_MODEM_UN','TELMEX')
+DEFAULT_PASSWORD = os.environ.get('TELMEX_MODEM_PW','')
+DEFAULT_ITEM = 'status'
+DEFAULT_IP = '192.168.1.254'
+DEFAULT_PORT = '80'
+
+def whinge(*args):
+    sys.stderr.write(" ".join(map(str,args))+"\n")
+
+def es_to_en(words):
+    return words
+
+def nummy(what):
+    val = what
+    try:
+        val = int(what)
+    except ValueError:
+        pass
+    except TypeError:
+        pass
+    return val
+
+def scrape_status(soup):
+    tables = soup.find_all('table')
+    stats = tables[1]
+    row = stats.find('tr')
+    groups = {}
+    group = None
+    while row:
+        csp = int(row.find('td').get('colspan','1'))
+        if csp == 4:
+            group = (""+row.find('td').text).strip()
+            group = es_to_en(group)
+            if group in groups:
+                print "? group '%s' appears twice?" % group
+            else:
+                groups[group] = {}
+        elif csp == 1:
+            if group is None:
+                print "? strange row ignored (no group): %s" % row
+            else:
+                data = groups[group]
+                raw = [ (""+x.text).strip() for x in row.find_all('td') ]
+                if len(raw) != 4:
+                    print "? row is not 4 cells: %s" % row
+                else:
+                    data[es_to_en(raw[0])] = nummy(raw[1])
+                    data[es_to_en(raw[2])] = nummy(raw[3])
+        row = row.find_next_sibling('tr')
+    pprint(groups)
+
+def scrape_ip(soup):
+    tables = soup.find_all('table')
+    data = tables[1]
+    row = data.find('tr')
+    row_num = 0
+    while row:
+        row_num += 1
+        cell = row.find('td')
+        if cell:
+            txt = cell.text
+            if txt == 'PVC-0':
+                cell = cell.find_next_sibling('td').find_next_sibling('td')
+                print cell.text
+                break
+        row = row.find_next_sibling('tr')
+
+URLS = {
+    'status': ['http://{ip}:{port}/SysTrafficStatus.html',scrape_status],
+    'ip': ['http://{ip}:{port}/rpServiceStatus.html',scrape_ip],
+}
+
+def main():
+    parser = OptionParser()
+    parser.add_option("-v","--verbose",dest="verbose",action="store_true",help="crank up verbosity")
+    parser.add_option("","--user",dest="user",help="www username")
+    parser.add_option("","--password",dest="password",help="www password")
+    parser.add_option("-m","--max-tries",dest="max_tries",type="int",default=3,help="max number of tries to fetch URL; default is 3")
+    parser.add_option("-i","--ip",dest="ip",default=DEFAULT_IP,help="ip address of modem; default is %s" % DEFAULT_IP)
+    parser.add_option("-p","--port",dest="port",default=DEFAULT_PORT,help="port of web server on modem; default is %s" % DEFAULT_PORT)
+    options,args = parser.parse_args()
+    item = args[0] if args else DEFAULT_ITEM
+    url_fmt,scraper = URLS.get(item,[None,None])
+    if not url_fmt:
+        parser.error("invalid item '%s' specified; one of: %s" % (item,", ".join(sorted(URLS.keys()))))
+    url = url_fmt.format(ip=options.ip,port=options.port)
+    if options.verbose:
+        whinge("item '%s' => %s" % (item,url))
+    username = options.user if options.user else DEFAULT_USERNAME
+    password = options.password if options.password else DEFAULT_PASSWORD
+    tables = None
+    ntries,max_tries = 0,options.max_tries
+    while not tables and ntries < max_tries:
+        resp = requests.request('GET',url,auth=(username,password))
+        html = resp.content
+        soup = BeautifulSoup(html)
+        tables = soup.find_all('table')
+        ntries += 1
+    if not tables:
+        parser.error("could not scrape tables from %s in %d tries" % (url,ntries))
+    scraper(soup)
+
+if __name__ == '__main__':
+    main()
