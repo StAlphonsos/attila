@@ -5,30 +5,4 @@ S?=..
 MM?=gnumake
 include $(S)/$(MM)/settings.mk
 include $(S)/$(MM)/commands.mk
-
-SCRIPTS?=auto-tunnel cutbuf deagent dotdist.sh emax finfo life mktunnel my_ip neagent nm-wwan-stomp nsopen numbers open_cutbuffer open_cutbuffer_tab osdtail psmap qs reagent scraper screen_title.pl ts ub xmlpp scrape_telmex_modem
-BINARIES?=xtitle xicontitle xalltitles
-
-default: all
-
-all: $(BINARIES)
-
-xtitle: xtitle.c
-
-xicontitle xalltitles: xtitle
-	$(FAKE) $(LN) -s $< $@
-
-install: $(BINDIR) all
-	@(for f in $(SCRIPTS) $(BINARIES); do $(FAKE) $(INSTALL) $$f $(BINDIR); done)
-
-uninstall: $(BINDIR)
-	(for f in $(SCRIPTS) $(BINARIES); do $(FAKE) $(RM) -f $(BINDIR)/$$f; done)
-
-clean:
-	$(FAKE) $(RM) -f $(BINARIES) *.o
-
-distclean: clean
-	$(FAKE) $(RM) -f  *~ *.tmp
-
-$(BINDIR):
-	$(FAKE) $(INSTALL_D) $(BINDIR)
+include _makefile
