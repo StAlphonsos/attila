@@ -1,0 +1,14 @@
+#!/bin/sh
+##
+state=$HOME/.telmex_ip
+cur=`scrape_telmex_modem ip`
+prev=''
+[ -f "$state" ] && prev=`cat $state`
+if [ x"$prev" = "x" ]; then
+  echo $cur > $state
+elif [ x"$cur" != "x" -a "$cur" != "$prev" ]; then
+  [ -f $state ] && mv $state $state.prev
+  echo $cur > $state
+  [ -x $HOME/.telmex_ip_changed ] && $HOME/.telmex_ip_changed $cur
+fi
+echo $cur
