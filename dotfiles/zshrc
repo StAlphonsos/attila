@@ -323,3 +323,5 @@ fi
 if [ x$EMACS = xt ]; then
   unsetopt zle
 fi
+
+[ -f $HOME/.zshrc_local ] && source $HOME/.zshrc_local

@@ -1,4 +1,4 @@
 #!/bin/sh
 ##
-/home/attila/bin/psmap -n emacs || (cd /home/attila; zsh -c "emacs --daemon")
+$HOME/bin/psmap -n emacs || (cd $HOME; env SHELL=/usr/local/bin/zsh zsh -c "emacs --daemon")
 exit 0
