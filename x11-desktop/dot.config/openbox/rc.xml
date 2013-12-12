@@ -281,7 +281,7 @@
     </keybind>
     <keybind key="A-S-3">
       <action name="Execute">
-        <command>mate-screensaver-command -a</command>
+        <command>xscreensaver-command -a</command>
       </action>
     </keybind>
     <keybind key="A-S-8">

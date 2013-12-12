@@ -365,7 +365,7 @@ Plugin {
         # 2 line view, time in bold above and date below
         ClockFmt = <span font="Sans 8"><b>%H:%M</b>&#xA;%a %d %b</span>
         TooltipFmt = <span font="Sans 12">%a %d-%b-%Y %T</span>
-        Action = (cal -h | xmessage -file -) &
+        Action = cal -h | xmessage -file -) &
         ShowCalendar = false
         ShowTooltip = true
     }
