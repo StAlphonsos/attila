@@ -1,7 +1,7 @@
 # -*- makefile -*-
 #
 
-DOTFILES?=bashrc emacs profile rc screenrc zshaliases zshenv zshrc gitconfig
+DOTFILES?=bashrc emacs profile rc screenrc zshaliases zshenv zshrc gitconfig tmux.conf
 XFILES?=Xdefaults xsessiorc
 
 default: all
