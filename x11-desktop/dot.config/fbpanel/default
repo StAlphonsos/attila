@@ -173,6 +173,10 @@ Plugin {
                 icon = gnome-session-halt
                 action = sudo shutdown -h now
             }
+ 	    item {
+	        name = Suspend
+		action = sudo zzz
+	    }
             item {
                 name = logout
                 icon = gnome-session-logout
