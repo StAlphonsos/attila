@@ -6,8 +6,6 @@ DOTDIRS?=config
 
 default: all
 
-all::
-
 all clean distclean:
 
 install: all
