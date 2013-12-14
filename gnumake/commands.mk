@@ -4,6 +4,7 @@
 FAKE?=
 VERBOSE?=
 ECHO?=echo
+SED?=sed
 LN?=ln
 INSTALL?=install -vC
 INSTALL_D?=install -vd
