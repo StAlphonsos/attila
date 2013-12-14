@@ -10,6 +10,7 @@ xset fp rehash
 xrdb -merge $HOME/.Xdefaults
 xmodmap $HOME/.xmodmaprc
 xsetroot -solid black
+xscreensaver &
 openbox &
 fbpanel
 #mate-session
