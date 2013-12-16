@@ -1,8 +1,7 @@
 # -*- makefile -*-
 #
 
-DOTFILES?=bashrc emacs profile rc screenrc zshaliases zshenv zshrc gitconfig
-XFILES?=Xdefaults xsessiorc
+DOTFILES?=bashrc emacs profile rc screenrc zshaliases zshenv zshrc gitconfig tmux.conf
 
 default: all
 
@@ -10,9 +9,6 @@ all clean distclean:
 
 install: all
 	@(for f in $(DOTFILES); do $(FAKE) $(INSTALL) $$f $(DOTDIR)/.$$f; done)
-
-xinstall:
-	@(for f in $(XFILES); do $(FAKE) $(INSTALL) $$f $(DOTDIR)/.$$f; done)
 
 uninstall:
 	@echo No uninstall for dotfiles
