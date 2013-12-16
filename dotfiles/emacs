@@ -2,7 +2,7 @@
 ;;
 ;; attila's EMACS configuration
 ;;
-;; Time-stamp: <2012-11-10 15:33:31 attila@stalphonsos.com>
+;; Time-stamp: <2013-12-16 12:19:53 attila@stalphonsos.com>
 ;; $Id: dot.emacs,v 1.1 2006/07/13 17:56:28 attila Exp $
 ;;
 
@@ -49,6 +49,7 @@
        (load-path-append "/usr/share/emacs/site-lisp")
        ))
 (load-path-append "~/emacs/lisp/scala-mode")
+(setenv "EMACS" "t") ;; for child processes
 ;;;
 ;; Load stuff
 ;;;
