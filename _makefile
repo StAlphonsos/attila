@@ -4,7 +4,10 @@
 # The following targets are useful:
 #     help              produce this message
 #     all               build any software
-#     install           install into $HOME
+#     install           install everything but desktop into $HOME
+#     desktop           install desktop config into $HOME
+#                       to specify something other than x11 say:
+#                         $ make DESKTOP=foo desktop
 #     clean             clean up temp files
 #     distclean         clean + reset to virgin state
 #     dist              cook dist-version.tar.gz tarball
