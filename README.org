@@ -1,0 +1,29 @@
+# -*- mode:org; indent-tabs-mode:nil; tab-width:2 -*-
+
+This is an ORG-MODE file.  Lines that begin with stars (*) are headings.
+Hit TAB on a line that begins with a star to expand it and collapse it.
+
+* WTF
+
+This is my Unix environment, more or less.  If you set your account up
+with zsh as your shell and do "make install" in this tree you'll get
+my zsh environment, along with my EMACS setup, a bunch of utilities in
+~/bin and a bunch of templates in ~/lib
+
+There is also an X11 desktop environment that I use on BSD unix for
+the most part, although I might switch to this under other OSes as
+well.  It is not installed by default because I'm frequently
+installing this on a server and the desktop is irrelevant.
+
+* Build System
+
+I use this environment on both BSD Unix and Linux.  To accomodate
+differences between BSD make and GNU make I have split things in
+two:
+
+ - Every level of the tree has three files: BSDmakefile, GNUmakefile
+   and _makefile.  The first two are wrappers that include the third
+   using the syntax for the make in question.  They also pull in the
+   right settings.mk and commands.mk files, which live in
+   the bsdmake and gnumake subdirectories at top level in the tree.
+ - _makefile has the actual rules and should be make-agnostic
