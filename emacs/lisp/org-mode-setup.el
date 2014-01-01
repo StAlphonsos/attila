@@ -14,6 +14,16 @@
         ("Song" ?s "* %^{Title}\n  %U\n   %i\n  %a" "~/notes/Songs.org" "Songs")
         ("Dialogue" ?d "* %^{Title}\n  %U\n   %i" "~/notes/Dialogues.org" "Dialogues")))
 (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
+(require 'org2blog-autoloads)
+(require 'netrc)
+(setq blog (netrc-machine (netrc-parse "~/.netrc") "thisland" t))
+(setq org2blog/wp-blog-alist
+      '(("thisland"
+         :id "thisland.haqistan.net"
+         :url "https://thisland.haqistan.net/xmlrpc.php",
+         :username (netrc-get blog "login")
+         :password (netrc-get blog "password")
+         :default-title "Org-Mode Post")))
 (global-set-key "\C-cl" 'org-store-link)
 (global-set-key "\C-ca" 'org-agenda)
 (global-set-key "\C-cb" 'org-iswitchb)
