@@ -38,6 +38,7 @@ $Verbose = $opt_v;
 $BG = " &" if $opt_b;
 $ISBN = $opt_I;
 $DEF_URL = 'http://my.yahoo.com/';
+$SEARCH_URL = 'https://duckduckgo.com/';
 $DontDoit = $opt_n;
 $Tab = $opt_t? 'new-tab': 'new-window';
 #$NSBINS{netscape} = '/usr/local/netscape/netscape';
@@ -101,7 +102,8 @@ if (!defined($fn)) {
   } else {
     my $q = $fn;
     $q =~ s/\s+/\+/g;
-    $url = "http://www.google.com/search?q=$q";
+#    $url = "http://www.google.com/search?q=$q";
+    $url = "$SEARCH_URL?q=$q";
   }
 } else {
   $url = $fn;
