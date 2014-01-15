@@ -1,6 +1,6 @@
 ;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;
-;; Time-stamp: <2006-03-04 14:59:54 attila@stalphonsos.com>
+;; Time-stamp: <2014-01-14 22:15:56 attila@stalphonsos.com>
 ;;
 ;; Numerological fu.
 ;;
@@ -36,7 +36,7 @@
   (cadr (assoc x *numnums*)))
 
 (defun nummean (x)
-  (get (numnum x) 'numerological-meaning "unknown"))
+  (get (numnum x) 'numerological-meaning))
 
 (defun explode-intstr (x)
   (map 'list '(lambda (x) (string-to-int (string x))) x))
@@ -63,7 +63,7 @@
 (defun numerological-meaning (n)
   (let* ((x (numerological-addstr (if (stringp n) n (int-to-string n))))
          (m (nummean x)))
-    (format "%d=>%d: %s" n x m)))
+    (format "%s=>%d: %s" n x m)))
 
 (defun numerology (x)
   (interactive "nNumber: ")

@@ -7,6 +7,7 @@
 (setq org-default-notes-file (concat org-directory "/notes.org"))
 (setq org-remember-templates
       '(("Todo" ?t "* TODO %?\n  %i\n  %a" "~/notes/Plan.org" "To-do")
+        ("Note" ?n "* %U %?\n  %i\n  %a" "~/notes/Scratch.org" "Random")
         ("Blog" ?b "* %U %?\n\n  %i\n  %a" "~/notes/Blog.org" "Bloggable")
         ("Idea" ?i "* %^{Title}\n  %i\n  %a" "~/notes/Scrib.org" "Ideas")
         ("kWantera" ?k "* %^{Title}\n  %U\n  %i\n  %a" "~/Work/kWantera/notes.org" "Work Notes")

@@ -175,7 +175,7 @@ Plugin {
             }
  	    item {
 	        name = Suspend
-		action = sudo zzz
+		action = zzz_ask
 	    }
             item {
                 name = logout
