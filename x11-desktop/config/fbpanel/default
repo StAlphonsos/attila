@@ -166,16 +166,16 @@ Plugin {
             item {
                 name = Reboot
                 icon = gnome-session-reboot
-                action = sudo reboot
+                action = ask_before reboot sudo reboot
             }
             item {
                 name = Shutdown
                 icon = gnome-session-halt
-                action = sudo shutdown -h now
+                action = ask_before shutdown sudo shutdown -h now
             }
  	    item {
 	        name = Suspend
-		action = zzz_ask
+		action = ask_before suspend sudo zzz
 	    }
             item {
                 name = logout

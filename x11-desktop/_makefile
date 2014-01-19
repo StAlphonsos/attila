@@ -9,8 +9,8 @@ default: all
 all clean distclean:
 
 install: all
-	@(for f in $(DOTFILES); do $(FAKE) $(INSTALL) $$f $(DOTDIR)/.$$f; done)
-	@(for d in $(DOTDIRS); do $(FAKE) $(TAR) cf - $$d | (cd $(DOTDIR); $(TAR) xvf -); done)
+	(for f in $(DOTFILES); do $(FAKE) $(INSTALL) $$f $(DOTDIR)/.$$f; done)
+	(for d in $(DOTDIRS); do $(FAKE) $(TAR) -C $$d -cf - . | $(TAR) -C $(DOTDIR)/.$$d -xvf -; done)
 
 uninstall:
 	@echo No uninstall for x11-desktop
