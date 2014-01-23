@@ -3,4 +3,13 @@
 what="$1"
 shift
 cmd="$*"
-xterm -title "Confirm Action" -geometry 60x10 -e "dialog --yesno \"Confirm: $what\" 10 60 && $cmd"
+dialog_cmd="dialog --yesno \"Confirm: $what\" 10 60 && $cmd"
+#echo "# $cmd"
+if [ x$DISPLAY != x ]; then
+  xterm -title "Confirm Action" -geometry 60x10 -e "$cmd"
+else
+  sh -c "$dialog_cmd"
+fi
+
+
+
