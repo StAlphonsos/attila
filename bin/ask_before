@@ -6,7 +6,7 @@ cmd="$*"
 dialog_cmd="dialog --yesno \"Confirm: $what\" 10 60 && $cmd"
 #echo "# $cmd"
 if [ x$DISPLAY != x ]; then
-  xterm -title "Confirm Action" -geometry 60x10 -e "$cmd"
+  xterm -title "Confirm Action" -geometry 60x10 -e "$dialog_cmd"
 else
   sh -c "$dialog_cmd"
 fi
