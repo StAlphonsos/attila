@@ -179,4 +179,7 @@ alias mem='while read command percent rss; do if [[ "${command}" != "COMMAND" ]]
 
 alias dsl_ip='scrape_telmex_modem ip'
 
+AWS_LS_HEADERS=${AWS_LS_HEADERS-T:Name,Image,Type,State}
+alias aws-lsec2='list_instances -H $AWS_LS_HEADERS'
+
 [ -f $HOME/.zshaliases_local ] && source $HOME/.zshaliases_local
