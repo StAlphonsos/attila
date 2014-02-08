@@ -1,0 +1,16 @@
+# -*- makefile -*-
+#
+
+DOTFILES?=flailrc offlineimaprc
+DOTDIRS?=flail
+
+default: all
+
+all clean distclean:
+
+install: all
+	(for f in $(DOTFILES); do $(FAKE) $(INSTALL) $$f $(DOTDIR)/.$$f; done)
+	(for d in $(DOTDIRS); do $(FAKE) $(MKDIR_P) $(DOTDIR)/.$$d; $(FAKE) $(TAR) -C $$d -cf - . | $(TAR) -C $(DOTDIR)/.$$d -xvf -; done)
+
+uninstall:
+	@echo No uninstall for mail-setup

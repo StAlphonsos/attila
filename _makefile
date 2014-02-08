@@ -17,6 +17,7 @@ SUBDIRS?=bin lib dotfiles emacs
 MAKESYS?=bsdmake BSDmakefile gnumake GNUmakefile _makefile
 
 DESKTOP?=x11
+LAPTOP?=freebsd
 
 DIST_NAME=attila_env
 # Moved into make-specific file:
@@ -42,6 +43,12 @@ dist: distclean $(DIST_TAR_GZ)
 
 desktop:
 	(cd $(DESKTOP)-desktop; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) install)
+
+mail:
+	(cd mail-setup; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) install)
+
+laptop:
+	(cd $(LAPTOP)-laptop; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) install)
 
 $(DIST_TAR): $(DIST_TMP)
 	$(TAR_CF) $(DIST_TAR) $(DIST_TMP)

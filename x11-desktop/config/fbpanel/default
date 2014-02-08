@@ -193,7 +193,7 @@ Plugin {
                 name = logout
                 icon = gnome-session-logout
                 # action = /usr/local/libexec/fbpanel/xlogout
-		action = ask_before logout psmap fbpanel kill
+		action = ask_before logout psmap openbox kill
             }
         }
     }
