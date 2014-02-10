@@ -2,7 +2,7 @@
 #
 
 DOTFILES?=flailrc offlineimaprc msmtprc
-DOTDIRS?=flail
+DOTDIRS?=flail sigs
 
 default: all
 

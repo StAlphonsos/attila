@@ -4,7 +4,7 @@
 ###
 ### Sample .flailrc
 ###
-### Time-stamp: <2014-02-07 16:35:38 attila@stalphonsos.com>
+### Time-stamp: <2014-02-10 16:02:14 attila@stalphonsos.com>
 ###
 ### Unfortunately, this file is probably the best documentation to the
 ### flail programmer's interface.  Anyone who wants to pitch in, please
@@ -101,6 +101,7 @@ $DEF_DOMAIN = 'stalphonsos.com';
 $IncomingFolder = $DEF_INCOMING;
 $FolderDir = $ENV{'HOME'}.'/Mail';
 $Editor = 'emacsclient';
+$SignatureDir = $ENV{'HOME'}.'/.sigs';
 $Quiet = 0;
 $AskAddressBook = 0;
 $AutoAddressBook = 1;

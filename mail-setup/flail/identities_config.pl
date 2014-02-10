@@ -2,12 +2,14 @@
 
 $IDENTITIES{'StA'} = 'attila <attila@stalphonsos.com>';
 $IDENTITIES{'ClueFactory'} = 'Sean Levy <snl@cluefactory.com>';
-$IDENTITIES{'BitsEnd'} = 'Sean Levy <snl@bitsend.com>';
+$IDENTITIES{'Gmail'} = 'Sean Levy <cluefactory@gmail.com>';
+$IDENTITIES{'kWantera'} = 'Sean Levy <slevy@kwantera.com>';
 
-$ID_SMTP{' default'} = '127.0.0.1:25';
-$ID_SMTP{'StA'} = '127.0.0.1:10025';
-$ID_SMTP{'ClueFactory'} = '127.0.0.1:50025';
-$ID_SMTP{'BitsEnd'} = '127.0.0.1:20025';
+$ID_SMTP{' default'} = '!msmtp -t';
+$ID_SMTP{'StA'} = '!msmtp -t -a stalphonsos';
+$ID_SMTP{'ClueFactory'} = '!msmtp -t -a cluefactory';
+$ID_SMTP{'Gmail'} = '!msmtp -t -a gmail';
+$ID_SMTP{'kWantera'} = '!msmtp -t -a kWantera';
 
 1;
 __END__
@@ -18,4 +20,3 @@ __END__
 # tab-width: 4
 # perl-indent-level: 4
 # End:
-

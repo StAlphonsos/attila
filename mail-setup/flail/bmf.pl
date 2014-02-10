@@ -1,7 +1,7 @@
 ##
 # bmf.pl - flail/bmf integration
 #
-# Time-stamp: <2014-02-10 10:01:01 attila@stalphonsos.com>
+# Time-stamp: <2014-02-10 12:55:25 attila@stalphonsos.com>
 ##
 use vars qw($BmfProgram);
 $BmfProgram = '/usr/local/bin/bmf';
@@ -64,9 +64,13 @@ sub call_bmf {
             }
         }
         flail_emit("[Passed $count ($pos+$neg) msgs through: $BmfProgram $args]\n") unless $Quiet;
-        flail_move(@move,$folder) if
-            (!$::OPT->{'test'} && !$::OPT->{'check'} &&
-             $folder && scalar(@move));
+        if (@move) {
+            if ($::OPT->{'mark'}) {
+                flail_mark("@move");
+            } elsif (!$::OPT->{'test'} && !$::OPT->{'check'} && $folder) {
+                flail_move(@move,$folder);
+            }
+        }
     }
 }
 
@@ -104,7 +108,7 @@ sub cmd_bmf {
     call_bmf($opt,$folder,@args);
 }
 
-flail_defcmd1("spam",\&cmd_bmf,"bmf cmds: spam/no, spam/re, spam/no/re, spam/test (all w/noexec)");
+flail_defcmd1("spam",\&cmd_bmf,"bmf cmds: spam/no /re /no/re /test /filter /mark (all w/noexec, /verbose)");
 
 flail_emit(" [BMF]") unless $Quiet;
 
