@@ -75,14 +75,14 @@ ssl			= no
 sslcacertfile		= /usr/local/share/certs/ca-root-nss.crt
 remoteuser		= attila
 remotepassfile		= ~/mine/creds/attila@stalphonsos.net
-folderfilter		= lambda fn: not re.match('^(spam|Archive|Trash|Junk|Spam|FreeBSD).*$',fn)
+folderfilter		= lambda fn: not re.match('^(spam|Archive|Admin|Trash|Junk|Spam|FreeBSD).*$',fn)
 # idlefolders = ['INBOX', 'INBOX.Alerts']
 #maxconnections = 2
 #holdconnectionopen = no
-expunge			= no
+expunge			= yes
 #subscribedonly = no
 #createfolders = True
-#readonly = False
+readonly = False
 maxsize			= 2000000
 maxage			= 30
 

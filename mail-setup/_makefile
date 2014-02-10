@@ -1,7 +1,7 @@
 # -*- makefile -*-
 #
 
-DOTFILES?=flailrc offlineimaprc
+DOTFILES?=flailrc offlineimaprc msmtprc
 DOTDIRS?=flail
 
 default: all
@@ -10,6 +10,7 @@ all clean distclean:
 
 install: all
 	(for f in $(DOTFILES); do $(FAKE) $(INSTALL) $$f $(DOTDIR)/.$$f; done)
+	chmod 600 $(DOTDIR)/.msmtprc
 	(for d in $(DOTDIRS); do $(FAKE) $(MKDIR_P) $(DOTDIR)/.$$d; $(FAKE) $(TAR) -C $$d -cf - . | $(TAR) -C $(DOTDIR)/.$$d -xvf -; done)
 
 uninstall:
