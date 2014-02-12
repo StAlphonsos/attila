@@ -1,7 +1,7 @@
 ##
 # autofile.pl - auto-file messages in flail
 #
-# Time-stamp: <2006-07-02 12:16:38 attila@stalphonsos.com>
+# Time-stamp: <2014-02-11 18:59:24 attila@stalphonsos.com>
 # $Id: autofile.pl,v 1.5 2006/07/13 17:59:11 attila Exp $
 #
 # Copyright (C) 2006 by Sean Levy <snl@cluefactory.com>.

@@ -4,7 +4,7 @@
 ###
 ### Sample .flailrc
 ###
-### Time-stamp: <2014-02-10 16:02:14 attila@stalphonsos.com>
+### Time-stamp: <2014-02-12 12:29:45 attila@stalphonsos.com>
 ###
 ### Unfortunately, this file is probably the best documentation to the
 ### flail programmer's interface.  Anyone who wants to pitch in, please
@@ -144,9 +144,40 @@ sub cmd_reconf {
   do "conf" or die(qq{conf error: $@\n}); # use lib helped here
 }
 
-sub cmd_ssz {
-  print "Spam size: ".eval join('+',map { (stat($_))[7] } <spam*>);
-  print "\n";
+sub find_all_files {
+    my($subdir,$regexp) = @_;
+    my @files = ();
+    if (opendir(SUBDIR,$subdir)) {
+        ## This is a little wasteful, but it's only the build system...
+#+D         print STDERR "reading SUBDIR $subdir...\n";
+        my @list = (
+            grep {
+                ($_ !~ /^[\.\#]/) && ($_ !~ /~$/) &&
+                    ((-d "$(subdir}/$_") ||
+                     !defined($regexp) || ($_ =~ /\.${regexp}$/))
+            } readdir(SUBDIR)
+        );
+#+D         print STDERR "read $subdir, $!\n";#+D
+        closedir(SUBDIR);
+#+D         print STDERR "find_all_files($subdir,$regexp) raw list=(@list)\n"; #+D
+        push(@files, map { "$subdir/$_" } @list);
+        push(@files, find_all_files("$subdir/$_",$regexp))
+            foreach (grep { -d "$subdir/$_" } @list);
+#+D         print STDERR "find_all_files($subdir,$regexp) final list=(@list)\n";#+D
+    }
+    return @files;
+}
+
+sub dir_size {
+    my $dir = shift(@_);
+    my @files = find_all_files($dir);
+    say "dir_size($dir): @files";
+    my $total = 0;
+    foreach my $file (@files) {
+        $total += (stat($file))[7];
+    }
+    return $total unless wantarray;
+    return($total,scalar(@files));
 }
 
 sub number_of {
@@ -155,6 +186,51 @@ sub number_of {
     my $n = $2 if $thing =~ m/^($base)(\d+)$/;
     $n ||= 0;
     return $n;
+}
+
+sub megabytes {
+    my($z) = @_;
+    return 'NaN' unless $z && ($z ne 'NaN');
+    $z /= 1024 * 1024;
+    return sprintf('%.02fmb',$z);
+}
+
+sub kilobytes {
+    my($z) = @_;
+    return 'NaN' unless $z && ($z ne 'NaN');
+    $z /= 1024;
+    return sprintf('%.02fkb',$z);
+}
+
+sub cmd_ssz {
+    my @folders = <spam*>;
+    say "folders: @folders";
+    my($latest) = sort { number_of($b) <=> number_of($a) } @folders;
+    say "latest: $latest";
+    my $latest_z = 0;
+    my $total_z = 0;
+    my $total_n = 0;
+    my $latest_n = 0;
+    my $latest_a = 0;
+    foreach my $folder (@folders) {
+        my($z,$n) = dir_size($folder);
+        say "folder $folder: z=$z n=$n";
+        if ($folder eq $latest) {
+            $latest_z = $z;
+            $latest_n = $n;
+            $latest_a = $n? $z/$n: 'NaN';
+            $latest_a = kilobytes($latest_a);
+        }
+        $total_n += $n;
+        $total_z += $z;
+    }
+    my $total_d = scalar(@folders);
+    my $total_a = $total_n? ($total_z / $total_n): 'NaN';
+    $total_z = megabytes($total_z);
+    $latest_z = megabytes($latest_z);
+    $total_a = kilobytes($total_a);
+    flail_emit("Total spam size: $total_z in $total_n files across $total_d folders (${total_a}/spam)\n");
+    flail_emit("Latest spam folder: $latest w/$latest_n msgs, $latest_z ($latest_a)\n");
 }
 
 sub latest_spam_folder {
@@ -245,23 +321,25 @@ flail_alias("kwt",'cd slevy@kwantera.com/INBOX');
 flail_alias("gmail",'cd cluefactory@gmail.com/INBOX');
 flail_alias("sta",'cd attila@stalphonsos.com/INBOX');
 #flail_alias("spam", "map cur mv %m spam");
-flail_alias("slurp","map all { slurp1(%*); }");
-flail_alias("mgrep","map cur { grep_msg(%*); }");
-flail_alias("agrep","map all { grep_msg(%*); }");
-flail_alias("hgrep","map cur { grep_headers('_',%*); }");
-flail_alias("fgrep","map all { grep_headers('_',%*); }");
-flail_alias("mls","ls -marked");
-flail_alias("gls","ls -matched");
+flail_alias("slurp","map all { slurp1(%*) }");
+flail_alias("mgrep","map cur { grep_msg(%*) }");
+flail_alias("agrep","map all { grep_msg(%*) }");
+flail_alias("hgrep","map cur { grep_headers('_',%*) }");
+flail_alias("fgrep","map all { grep_headers('_',%*) }");
+flail_alias("mls","ls/rev -marked");
+flail_alias("gls","ls/rev -matched");
 flail_alias("mmv","mv -marked %*");
 flail_alias("mcp","cp -marked %*");
-flail_alias("autofile","map all { autofile(); }");
-flail_alias("automark","map all { automark(); }");
+flail_alias("autofile","map all { autofile() } ");
+flail_alias("automark","map all { automark() } ");
 flail_alias("load",",print do \"%*\""); # so you can say: load autofile.pl
 flail_alias("sls",'!ls -l spam*');
 flail_alias("ils",'!ls -l INCOMING');
 flail_alias("allspam",',flail_move(q|1:$|,latest_spam_folder)');
-flail_alias("mspam",',flail_move(q|-marked|,latest_spam_folder)');
-
+flail_alias("update",'!sh ./grind_mail.sh');
+#flail_alias("mspam",',flail_move(q|-marked|,latest_spam_folder)');
+flail_alias("mspam",'spam/filter/mark/verbose 1:$');
+flail_alias("fspam",'spam/filter/verbose 1:$');
 print " done]\n" unless $SingleCommand;
 
 42;
