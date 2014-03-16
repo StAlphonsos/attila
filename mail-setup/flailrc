@@ -4,7 +4,7 @@
 ###
 ### Sample .flailrc
 ###
-### Time-stamp: <2014-02-12 12:29:45 attila@stalphonsos.com>
+### Time-stamp: <2014-02-13 09:18:22 attila@stalphonsos.com>
 ###
 ### Unfortunately, this file is probably the best documentation to the
 ### flail programmer's interface.  Anyone who wants to pitch in, please
@@ -340,6 +340,7 @@ flail_alias("update",'!sh ./grind_mail.sh');
 #flail_alias("mspam",',flail_move(q|-marked|,latest_spam_folder)');
 flail_alias("mspam",'spam/filter/mark/verbose 1:$');
 flail_alias("fspam",'spam/filter/verbose 1:$');
+flail_alias("mkdir",'!mu mkdir %*');
 print " done]\n" unless $SingleCommand;
 
 42;

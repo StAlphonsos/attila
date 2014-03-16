@@ -314,7 +314,8 @@ Plugin {
     padding = 0
     config {
         #interface = ppp0
-        interface = wlan0
+        #interface = wlan0
+	interface = bge0
         # set connection limits to make traffic graph more accurate
         TxLimit = 20
         RxLimit = 190
