@@ -147,10 +147,14 @@ Plugin {
         }
         separator {
         }
-	menu {  
+	menu {
 	    name = Computer
 	    icon = computer
             
+            item {
+                name = Run...
+	        action = grun
+            }
 	    item {
 		name = Terminal
 		icon = terminal
