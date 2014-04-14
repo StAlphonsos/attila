@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2002 by Sean Levy.  All Rights Reserved.
 #
-# Time-stamp: <2011-06-13 18:20:34 attila@stalphonsos.com>
+# Time-stamp: <2014-04-13 19:14:42 attila@stalphonsos.com>
 # $Id: numbers,v 1.1.1.1 2005/10/22 21:28:21 attila Exp $
 #
 # Author: Sean Levy <snl@cluefactory.com>
@@ -16,7 +16,7 @@
 use strict;
 use vars qw($ORIGINAL_SCRIPT $P $VERSION $VERBOSE $OPTS $USAGE $DESCR $AUTHOR
             $COPYRIGHT $ARGS_DESC $LOG_STDERR $LOG_FILE $LOG_FP $LOG_TSTAMP_FMT
-            $DEFAULTS $ALGO $MCRYPT);
+            $DEFAULTS $ALGO $MCRYPT $GNUPG $GNUPG2 $GPG);
 BEGIN {
   $ORIGINAL_SCRIPT = $0;
   my(@P) = split("/", $0);
@@ -45,6 +45,10 @@ $DEFAULTS =
   };
 $ALGO = 'rijndael-256';
 $MCRYPT = '/usr/local/bin/mcrypt';
+$GNUPG = '/usr/local/bin/gpg';
+$GNUPG2 = '/usr/local/bin/gpg2';
+$GPG = $GNUPG;
+$GPG = $GNUPG2 if (!(-f $GNUPG) && (-x $GNUPG2));
 $VERSION = '0.1.0';
 $DESCR = 'manage numbers';
 $AUTHOR = 'Sean Levy <snl@hardbits.com>';
@@ -172,7 +176,7 @@ sub spew_numbers {
   $more = q{ | more} if $opts->{m};
   my $grep = '';
   $grep = qq{ | grep '$pat'} if $pat;
-  my $command = qq{gpg --no-secmem-warning --homedir $gpgdir --decrypt $filename $grep $more};
+  my $command = qq{$GPG --no-secmem-warning --homedir $gpgdir --decrypt $filename $grep $more};
   #my $command = qq{$MCRYPT -F -a $ALGO -d < $filename $grep $more};
   print "# spew: $command\n" if $VERBOSE;
   system($command) == 0
@@ -184,7 +188,7 @@ sub get_numbers {
   my $gpgdir = $ENV{HOME} . '/vault/gnupg';
   my $filename = $ENV{HOME} . '/personal/numbers.txt.gpg';
   #my $filename = $ENV{HOME} . '/personal/numbers.txt.nc';
-  my $command = qq{gpg --no-secmem-warning --homedir $gpgdir --decrypt $filename};
+  my $command = qq{$GPG --no-secmem-warning --homedir $gpgdir --decrypt $filename};
   #my $command = qq{$MCRYPT -F -d -a $ALGO < $filename};
   print "# get: $command\n" if $VERBOSE;
   my $old = `$command`
@@ -208,7 +212,7 @@ sub write_numbers {
       or die "$P: could not create temp file $tmpfile: $!\n";
   print TMP $content;
   close(TMP);
-  my $command = qq{gpg --no-secmem-warning --homedir $gpgdir -o $filename -e -r vault $tmpfile};
+  my $command = qq{$GPG --no-secmem-warning --homedir $gpgdir -o $filename -e -r vault $tmpfile};
   #my $command = qq{$MCRYPT -F -a $ALGO < $tmpfile > $filename};
   print "# encrypt: $command\n" if $VERBOSE;
   system($command) == 0
