@@ -38,44 +38,58 @@ extern int optreset;
 
 #define OPTSTRING "vm:w:C:"
 
-typedef struct dzenbar_state {
+typedef struct gauge_state {
     float               max_val;
     float               min_val;
     int                 tot_width;
     float               val;
-} dzenbar_state_t;
+} gauge_state_t;
 
-typedef struct dzenbar_state {
-    int                 verbose:1;
-} dzenbar_state_t;
+typedef struct our_state {
+    int                 options;
+} our_state_t;
 
-#define DZENBAR_STATE_T_INIT {0,0,0,0,0}
-
-static void handle_command_line(
-    int                 argc,
-    char              **argv,
-    dzenbar_state_t    *state)
-{
-}
-
-static void produce_output(
-    dzenbar_state_t    *state)
-{
-}
+#define OUR_STATE_INIT {.options=0}
 
 static void cleanup_state(
     dzenbar_state_t    *state)
 {
 }
 
+static void do_gadget(
+    our_state_t        *state,
+    char               *gadget)
+{
+    if (!strcmp(gadget,"load")) {
+    } else if (!strcmp(gadget,"cpu")) {
+    } else if (!strcmp(gadget,"netio")) {
+    } else if (!strcmp(gadget,"temp")) {
+    } else if (!strcmp(gadget,"mail")) {
+    } else if (!strcmp(gadget,"clock")) {
+    } else {
+        usage();
+    }
+}
+
 int main(
     int                 argc,
     char              **argv)
 {
-    dzenbar_state_t state = DZENBAR_STATE_T_INIT;
+    int ch = -1;
+    int done = 0;
+    our_state_t state = OUR_STATE_INIT;
 
-    handle_command_line(argc,argv,&state);
-    produce_output(&state);
-    cleanup_state(&state);
+    while ((ch = getopt(argc, argv, OPTSTRING)) != -1) {
+        switch (ch) {
+        }
+    }
+    done = (state.options & DZB_LOOP)? 0: 1;
+    do {
+        for (int argno = optind; argno < argc; argno++)
+            do_gadget(&state,argv[argno]);
+        nloops++;
+        if (!done)
+            sleep(sleep_secs);
+    } while (!done);
     exit(0);
 }
