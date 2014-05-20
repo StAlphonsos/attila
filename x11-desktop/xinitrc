@@ -1,16 +1,14 @@
 #!/bin/sh
 ##
-[ -d /usr/local/lib/X11/fonts/Droid ] && \
-  xset +fp /usr/local/lib/X11/fonts/Droid/
-[ -d /usr/local/lib/X11/fonts/webfonts ] && \
-  xset +fp /usr/local/lib/X11/fonts/webfonts/
-[ -d /usr/local/lib/X11/fonts/URW ] && \
-  xset +fp /usr/local/lib/X11/fonts/URW/
+xfd=${X_FONT_DIR-/usr/local/lib/X11/fonts}
+for subd in Droid webfonts URW profont; do
+  [ -d ${xfd}/${subd} ] && xset +fp ${xfd}/${subd}/
+done
 xset fp rehash
 xrdb -merge $HOME/.Xdefaults
 xmodmap $HOME/.xmodmaprc
 xsetroot -solid black
 xscreensaver &
-openbox &
-fbpanel
+fbpanel &
+openbox
 #mate-session

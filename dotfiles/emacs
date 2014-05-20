@@ -2,7 +2,7 @@
 ;;
 ;; attila's EMACS configuration
 ;;
-;; Time-stamp: <2012-11-10 15:33:31 attila@stalphonsos.com>
+;; Time-stamp: <2013-12-24 21:43:05 attila@stalphonsos.com>
 ;; $Id: dot.emacs,v 1.1 2006/07/13 17:56:28 attila Exp $
 ;;
 
@@ -49,6 +49,7 @@
        (load-path-append "/usr/share/emacs/site-lisp")
        ))
 (load-path-append "~/emacs/lisp/scala-mode")
+(setenv "EMACS" "t") ;; for child processes
 ;;;
 ;; Load stuff
 ;;;
@@ -104,7 +105,7 @@
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "black" :foreground "green" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 110 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
+ '(default ((t (:inherit nil :stipple nil :background "black" :foreground "green" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
  '(cperl-array-face ((((class color) (background dark)) (:foreground "yellow" :weight bold))))
  '(cperl-hash-face ((((class color) (background dark)) (:foreground "orange" :slant italic :weight bold))))
  '(custom-documentation ((t (:foreground "violet"))))

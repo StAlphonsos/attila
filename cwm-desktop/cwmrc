@@ -1,0 +1,20 @@
+# attila's cwmrc -*- indent-tabs-mode:nil; mode:conf -*-
+sticky no
+command firefox		firefox
+command netsurf         netsurf
+command gnumeric        gnumeric
+command vlc             vlc
+command top             "xterm -e top"
+ignore xclock
+ignore xapm
+## My personal bindings:
+##    M-!  shell
+##    M-@  editor
+##    M-#  screensaver
+##    M-*  follow URL
+bind M-exclam           xterm
+bind M-at               "emacsclient -c -n"
+bind M-numbersign       "xscreensaver-command -a"
+bind M-asterisk         open_cutbuffer
+## EMACS wants these so hands off, cwm
+bind CM-f		unmap

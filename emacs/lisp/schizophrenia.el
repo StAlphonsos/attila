@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2008-10-25 16:34:18 attila@stalphonsos.com>
+;;; Time-stamp: <2014-02-07 08:35:00 attila@stalphonsos.com>
 ;;;
 ;;; attila is a schizophrenic freak.
 ;;; no, he's not.
@@ -12,9 +12,10 @@
 ;;; "we"?
 ;;; oh, stop.
 ;;;
+
 (require 'smtpmail)
 (require 'mailcrypt)
-(require 'vm)
+(require 'mu4e)
 
 (load-library "mc-toplev")
 
@@ -27,22 +28,18 @@
 ;;
 
 (setq *attila-smtp-alist*
-      '((StA 10025)
-        (BitsEnd 20025)
-        (Cluefactory 50025)
-        (SavvyIdler 50025)
-        (SDF 30025)
-        (DHP 40025)
+      '((StA ("smtp.i.stalphonsos.net" 25 plain "attila@stalphonsos.com" "attila"))
+        (Cluefactory ("smtp.i.stalphonsos.net" 25 plain "snl@cluefactory.com" "Sean Levy"))
+        (Gmail ("smtp.gmail.com" 587 starttls "cluefactory@gmail.com" "Sean Levy"))
+        (kWantera ("smtp.gmail.com" 587 starttls "slevy@kwantera.com" "Sean Levy"))
         )
       )
 
 (setq *attila-identity-alist*
       '((StA "attila <attila@stalphonsos.com>" 0)
-        (BitsEnd "Sean Levy <snl@bitsend.com>" 1)
-        (Cluefactory "Sean Levy <snl@cluefactory.com>" 2)
-        (SavvyIdler "US 2 <us2@savvyidler.com>" 3)
-        (SDF "Sean Levy <snl@sdf.lonestar.org>" 4)
-        (DHP "attila <attila@dhp.com>" 5)
+        (Cluefactory "Sean Levy <snl@cluefactory.com>" 1)
+        (Gmail "Sean Levy <cluefactory@gmail.com>" 2)
+        (kWantera "Sean Levy <slevy@kwantera.com>" 3)
         )
       )
 
@@ -73,21 +70,22 @@
         (forward-line 1)))
     pt))
 
-(defun get-mail-from-address ()
-  (let ((from-addr nil))
-    (save-excursion
-      (goto-char (point-min))
-      (while (and (< (point) (point-max))
-                  (null from-addr)
-                  (not (looking-at "^--text follows this line--")))
-        (if (looking-at "^From: *\\(.*\\)$")
-            (setq from-addr (buffer-substring (match-beginning 1)
-                                              (match-end 1))))
-        (forward-line 1)))
-    from-addr))
+(defun get-mail-from-address (&optional msg)
+  (let ((from-addr (if msg (mu4e-message-field msg :from) nil)))
+    (if (null from-addr)
+        (save-excursion
+          (goto-char (point-min))
+          (while (and (< (point) (point-max))
+                      (null from-addr)
+                      (not (looking-at "^--text follows this line--")))
+            (if (looking-at "^From: *\\(.*\\)$")
+                (setq from-addr (buffer-substring (match-beginning 1)
+                                                  (match-end 1))))
+            (forward-line 1))))
+      from-addr))
 
-(defun get-mail-identity ()
-  (let* ((from-addr (get-mail-from-address))
+(defun get-mail-identity (&optional msg)
+  (let* ((from-addr (get-mail-from-address msg))
          (idlist (lookup-mail-identity from-addr))
          (id (if (listp idlist) (car idlist) idlist)))
     (if (null id)
@@ -99,17 +97,22 @@
       t
     nil))
 
-(defun get-smtp-server-port-for (inbox)
+(defun get-smtp-info-for (inbox)
   (let* ((key (if (stringp inbox) (intern inbox) inbox))
          (srv (assoc key *attila-smtp-alist*)))
     (if (not (null srv))
         (cadr srv)
-      25)))
+      nil)))
 
 (defun set-smtp-variables-for (inbox)
-  (let ((port (get-smtp-server-port-for inbox)))
-    (setq smtpmail-smtp-server "127.0.0.1"
-          smtpmail-smtp-service port)))
+  (let ((vars (get-smtp-info-for inbox)))
+    (setq smtpmail-smtp-server (nth 0 vars)
+          smtpmail-default-smtp-server (nth 0 vars)
+          smtpmail-smtp-service (nth 1 vars)
+          smtpmail-stream-type (nth 2 vars)
+          mu4e-reply-to-address (nth 3 vars)
+          user-mail-address (nth 3 vars)
+          user-full-name (nth 4 vars))))
 
 (defun set-from-address (&optional id)
   (if (null id)
@@ -161,28 +164,83 @@
         (set-mail-identity id)
       (set-mail-identity (next-mail-identity id)))))
 
+(defun attila-set-gmail-outbound ()
+  (interactive)
+  (setq smtpmail-stream-type 'starttls
+        smtpmail-default-smtp-server "smtp.gmail.com"
+        smtpmail-smtp-server "smtp.gmail.com"
+        smtpmail-smtp-service 587))
+
+(defun attila-set-sta-outbound ()
+  (interactive)
+  (setq smtpmail-stream 'plain
+        smtpmail-default-smtp-server "smtp.i.stalphonsos.net"
+        smtpmail-smtp-server "smtp.i.stalphonsos.net"
+        smtpmail-smtp-server 25))
+
 (defun attila-mail-mode-hook ()
   (interactive)
   (local-set-key "\C-ci" 'attila-set-mail-identity)
   (local-set-key "\C-c\C-i" 'mail-complete)
   (message "[attila schizophrenia in effect; IDs: C-c i, Addresses: C-c Tab]"))
 
+(setq *attila-schizoid-mu4e-setup*
+      '((Cluefactory ((sent "/attila@stalphonsos.com/Sent")
+                      (drafts "/attila@stalphonsos.com/Drafts")
+                      (trash "/attila@stalphonsos.com/Garbage")))
+        (Gmail ((sent "/cluefactory@gmail.com/[Gmail].Sent Mail")
+                (drafts "/cluefactory@gmail.com/[Gmail].Drafts")
+                (trash "/cluefactory@gmail.com/[Gmail].Trash")))
+        (kWantera ((sent "/slevy@kwantera.com/[Gmail].Sent Mail")
+                   (drafts "/slevy@kwantera.com/[Gmail].Drafts")
+                   (trash "/slevy@kwantera.com/[Gmail].Trash")))))
+
+
+(defun attila-mu4e-dyn-folder (msg what)
+  (let* ((to (if msg (mu4e-message-field msg :to) nil))
+         (from (if msg (mu4e-message-field msg :from) nil))
+
+         (id (or (lookup-mail-identity to)
+                 (lookup-mail-identity from)
+                 *attila-current-identity*))
+         (tbl (assoc id *attila-schizoid-mu4e-setup*)))
+    (cadr (assoc what (cadr tbl)))))
+         
+(defun attila-mu4e-refile-folder (msg)
+  "/archive")
+
+(setq mu4e-maildir "~/Mail"
+      mu4e-sent-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'sent))
+      mu4e-drafts-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'drafts))
+      mu4e-trash-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'trash))
+      mu4e-refile-folder (lambda (msg) (attila-mu4e-refile-folder msg))
+      mu4e-user-mail-address-regexp "snl@cluefactory\.com\\|attila@stalphonsos.com\\|attila@stalphonsos\.net\\|slevy@kwantera\.com\\|cluefactory@gmail\.com"
+      mu4e-get-mail-command "offlineimap"
+      mu4e-maildir-shortcuts
+      '( ("/attila@stalphonsos.com/INBOX" . ?i)
+         ("/slevy@kwantera.com/INBOX" . ?k)
+         ("/cluefactory@gmail.com/INBOX" . ?g))
+      mu4e-reply-to-address "snl@cluefactory.com"
+      user-mail-address "snl@cluefactory.com"
+      user-full-name "Sean Levy")
+
 (add-hook 'mail-mode-hook 'attila-mail-mode-hook)
 
-(setq mail-default-headers "FCC: ~/mail/folders/outgoing")
+;(setq mail-default-headers "FCC: ~/Mail/outgoing")
 (setq send-mail-function 'smtpmail-send-it)
 (setq message-send-mail-function 'smtpmail-send-it)
+
 
 ;;
 ; Mailcrypt is my buddy
 ;;
 (mc-setversion "gpg")
-(setq mc-passwd-timeout 86400
-      mc-password-reader 'vm-read-password) ;my hack
+;(setq mc-passwd-timeout 86400
+;      mc-password-reader 'vm-read-password) ;my hack
 (autoload 'mc-install-write-mode "mailcrypt" nil t)
 (autoload 'mc-install-read-mode "mailcrypt" nil t)
 (add-hook 'mail-mode-hook 'mc-install-write-mode)
-(add-hook 'vm-mode-hook 'mc-install-read-mode)
-(add-hook 'vm-summary-mode-hook 'mc-install-read-mode)
-(add-hook 'vm-virtual-mode-hook 'mc-install-read-mode)
-(add-hook 'vm-mail-mode-hook 'mc-install-write-mode)
+;(add-hook 'vm-mode-hook 'mc-install-read-mode)
+;(add-hook 'vm-summary-mode-hook 'mc-install-read-mode)
+;(add-hook 'vm-virtual-mode-hook 'mc-install-read-mode)
+;(add-hook 'vm-mail-mode-hook 'mc-install-write-mode)

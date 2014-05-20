@@ -4,6 +4,7 @@
 FAKE?=
 VERBOSE?=
 ECHO?=echo
+SED?=sed
 LN?=ln
 INSTALL?=install -vC
 INSTALL_D?=install -vd
@@ -13,3 +14,4 @@ TAR_CF?=$(TAR) cf
 TAR_XF?=$(TAR) xf
 GZIP?=gzip
 MKDIR?=mkdir
+MKDIR_P?=$(MKDIR) -p

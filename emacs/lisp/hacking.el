@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2011-04-29 19:18:39 attila@stalphonsos.com>
+;;; Time-stamp: <2014-01-14 22:06:39 attila@stalphonsos.com>
 ;;;
 ;;; Stuff I use mainly for hacking.
 ;;;
@@ -210,7 +210,7 @@ schizophrenics sure do.  Yup.  All three of us."
   (attila-hack-dir-symvars))
 
 (mapcar 
- '(lambda (mode)
+ #'(lambda (mode)
     (add-hook mode 'attila-generic-programming-mode-hook))
  *attila-programming-mode-hooks*)
 

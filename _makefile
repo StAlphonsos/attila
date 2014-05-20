@@ -1,17 +1,36 @@
 # -*- makefile -*-
 #
+##+
+# The following targets are useful:
+#     help              produce this message
+#     all               build any software
+#     install           install everything but desktop into $HOME
+#     desktop           install desktop config into $HOME
+#                       to specify something other than x11 say:
+#                         $ make DESKTOP=foo desktop
+#     clean             clean up temp files
+#     distclean         clean + reset to virgin state
+#     dist              cook dist-version.tar.gz tarball
+##-
 
 SUBDIRS?=bin lib dotfiles emacs
 MAKESYS?=bsdmake BSDmakefile gnumake GNUmakefile _makefile
 
+DESKTOP?=x11
+LAPTOP?=freebsd
+
 DIST_NAME=attila_env
-DIST_VERS!=cat VERSION
+# Moved into make-specific file:
+#DIST_VERS!=cat VERSION
 DIST_TMP?=$(DIST_NAME)-$(DIST_VERS)
 DIST_LIST?=$(MAKESYS) $(SUBDIRS)
 DIST_TAR?=$(DIST_NAME)-$(DIST_VERS).tar
 DIST_TAR_GZ?=$(DIST_TAR).gz
 
-default: all
+default: help
+
+help:
+	@$(SED) -e '1,/^##+/d' -e '/^##-/,$$d' -e 's/^# //' < _makefile
 
 all install uninstall clean distclean::
 	@(for dir in $(SUBDIRS); do (cd $$dir; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) $@); done)
@@ -20,10 +39,16 @@ distclean::
 	$(RM) -f $(DIST_TAR) $(DIST_TAR_GZ)
 	$(RM) -rf $(DIST_TMP)
 
-xinstall:
-	@(cd dotfiles; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) $@)
-
 dist: distclean $(DIST_TAR_GZ)
+
+desktop:
+	(cd $(DESKTOP)-desktop; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) install)
+
+mail:
+	(cd mail-setup; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) install)
+
+laptop:
+	(cd $(LAPTOP)-laptop; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) install)
 
 $(DIST_TAR): $(DIST_TMP)
 	$(TAR_CF) $(DIST_TAR) $(DIST_TMP)

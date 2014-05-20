@@ -1,0 +1,3 @@
+apmd_flags=""		# for normal use: ""
+nfs_server=YES
+portmap_flags=""

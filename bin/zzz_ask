@@ -1,0 +1,3 @@
+#!/bin/sh
+##
+xterm -title "Confirm Suspend" -geometry 60x10 -e 'dialog --yesno "Really Suspend?" 10 60 && sudo zzz'

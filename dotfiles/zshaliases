@@ -111,8 +111,8 @@ alias osd_logmail='osd_cat -p bottom -d 1 -s 1 -o 0 -A left -i 150 -c green -l 3
 alias osd_logmsg='osd_cat -p top -d 1 -s 1 -o 0 -A left -i 150 -c yellow -l 5 -w'
 alias main='screen -S main -c $HOME/.screenrc-main'
 alias screens='screen -ls'
-alias a='pushd ~/tmp; ./apache.sh; popd'
-alias b='./Build'
+#alias a='pushd ~/tmp; ./apache.sh; popd'
+#alias b='./Build'
 function zt () {
   ZT="$*";
   echo "[ZT: $ZT]"
@@ -143,9 +143,9 @@ alias worklog='nb -b /home/attila/public_html/worklog'
 alias lytix-vpn='sudo openvpn --cd $HOME/Work/Lytix/Crypto --config lytix.conf'
 alias lytix-vpn2='sudo openvpn --cd $HOME/Work/Lytix/Crypto/LytixVPN2_generic_sean-levy --config LytixVPN2.conf'
 if [ x"$IS_LINUX" = "xt" ]; then
-  alias now="date +'%^a %d-%^b-%Y %T'"
+  alias now="date +'%^a %d-%^b-%Y %T %Z'"
 else
-  alias now="date +'%a %d-%b-%Y %T' | tr a-z A-Z"
+  alias now="date +'%a %d-%b-%Y %T %Z' | tr a-z A-Z"
 fi
 alias isodate="date +'%Y-%m-%dT%H:%M:%S%z'"
 
@@ -178,5 +178,11 @@ alias kssh='ssh -F $HOME/.ssh/kwantera.conf'
 alias mem='while read command percent rss; do if [[ "${command}" != "COMMAND" ]]; then rss="$(bc <<< "scale=2;${rss}/1024")"; fi; printf "%-26s%-8s%s\n" "${command}" "${percent}" "${rss}"; done < <(ps -A --sort -rss -o comm,pmem,rss | head -n 11)'
 
 alias dsl_ip='scrape_telmex_modem ip'
+
+AWS_LS_HEADERS=${AWS_LS_HEADERS-T:Name,Image,Type,State}
+alias aws-lsec2='list_instances -H $AWS_LS_HEADERS'
+
+onbsd alias suspend='ask_before suspend sudo zzz'
+onlinux alias suspend='ask_before suspend sudo pm-suspend'
 
 [ -f $HOME/.zshaliases_local ] && source $HOME/.zshaliases_local

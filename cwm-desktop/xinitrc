@@ -1,0 +1,16 @@
+#!/bin/sh
+##
+_xfonts=${XFONTDIR-/usr/local/lib/X11/fonts}
+fontsy () {
+  [ -d ${_xfonts}/$1 ] && xset fp+ ${_xfonts}/$1
+}
+[ -f $HOME/.Xdefaults ] && xrdb -merge $HOME/.Xdefaults
+[ -f $HOME/.xmodmaprc ] && xmodmap $HOME/.xmodmaprc
+fontsy Droid
+fontsy anonymous-pro
+fontsy jmk
+fontsy mscorefonts
+fontsy terminus
+xset fp rehash
+xsetroot -solid black
+cwm

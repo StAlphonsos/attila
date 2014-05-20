@@ -1,0 +1,108 @@
+# attila's offlineimap setup -*- conf -*-
+
+[general]
+metadata		= ~/.offlineimap
+#accounts = StAlphonsos Gmail kWantera
+accounts		= kWantera, StAlphonsos, Gmail
+maxsyncaccounts		= 1
+# Blinkenlights -- A fancy (terminal) interface
+# TTYUI         -- a text-based (terminal) interface
+# Basic         -- Noninteractive interface suitable for cron'ing
+# Quiet         -- Noninteractive interface, generates no output
+#                  except for errors.
+# MachineUI     -- Interactive interface suitable for machine
+#                  parsing.
+# You can override this with a command-line option -u.
+ui			= basic
+#ignore-readonly = no
+# pythonfile = ~/.offlineimap.py
+socktimeout		= 90
+# fsync = true
+
+[mbnames]
+enabled			= no
+#filename = ~/Mutt/muttrc.mailboxes
+#header = "mailboxes "
+#peritem = "+%(accountname)s/%(foldername)s"
+#sep = " "
+#footer = "\n"
+
+[Account Gmail]
+localrepository		= LocalGmail
+remoterepository	= CluefactoryGmail
+maxsize			= 2000000
+maxage			= 30
+quick = -1
+
+[Account StAlphonsos]
+localrepository		= Local
+remoterepository	= CluefactoryNYC
+maxsize			= 2000000
+maxage			= 90
+quick = -1
+
+[Account kWantera]
+localrepository		= LocalkWantera
+remoterepository	= kWanteraGmail
+maxsize			= 2000000
+maxage			= 30
+quick = -1
+# autorefresh = 5
+# quick = 10
+# If you switch the backend, you may want to delete the old cache
+# directory in ~/.offlineimap/Account-<account>/LocalStatus manually
+# could be sqlite
+#status_backend = plain
+#maildir-windows-compatible = no
+
+
+[Repository Local]
+type			= Maildir
+localfolders		= ~/Mail/attila@stalphonsos.com
+
+[Repository LocalGmail]
+type			= Maildir
+localfolders		= ~/Mail/cluefactory@gmail.com
+
+[Repository LocalkWantera]
+type			= Maildir
+localfolders		= ~/Mail/slevy@kwantera.com
+
+[Repository CluefactoryNYC]
+type			= IMAP
+remotehost		= imap.i.stalphonsos.net
+ssl			= no
+sslcacertfile		= /usr/local/share/certs/ca-root-nss.crt
+remoteuser		= attila
+remotepassfile		= ~/mine/creds/attila@stalphonsos.net
+folderfilter		= lambda fn: not re.match('^(spam|Archive|Admin|Trash|Junk|Spam|FreeBSD).*$',fn)
+# idlefolders = ['INBOX', 'INBOX.Alerts']
+#maxconnections = 2
+#holdconnectionopen = no
+expunge			= yes
+#subscribedonly = no
+#createfolders = True
+readonly = False
+maxsize			= 2000000
+maxage			= 30
+
+[Repository CluefactoryGmail]
+type			= Gmail
+remoteuser		= cluefactory@gmail.com
+remotepassfile		= ~/mine/creds/cluefactory@gmail.com
+sslcacertfile		= /usr/local/share/certs/ca-root-nss.crt
+ssl			= no
+transporttunnel		= openssl s_client -host imap.gmail.com -port 993 -quiet
+folderfilter		= lambda fn: 'All Mail' not in fn
+expunge			= no
+
+[Repository kWanteraGmail]
+type			= Gmail
+remoteuser		= slevy@kwantera.com
+remotepassfile		= ~/mine/creds/slevy@kwantera.com
+ssl			= no
+sslcacertfile		= /usr/local/share/certs/ca-root-nss.crt
+transporttunnel		= openssl s_client -host imap.gmail.com -port 993 -quiet
+expunge			= no
+folderfilter		= lambda fn: not re.match('^(Alerter|Cron|Nagios).*$',fn) and 'All Mail' not in fn
+#readonly = True
