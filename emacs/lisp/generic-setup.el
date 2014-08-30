@@ -1,8 +1,9 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2013-11-10 17:56:43 attila@stalphonsos.com>
+;;; Time-stamp: <2014-05-06 16:37:24 attila@stalphonsos.com>
 ;;;
 ;;; Generic EMACS setup fu, mainly globals and other random nonsense
+;;; Pulled in by ~/.emacs on Unix systems.
 ;;;
 (require 'info)
 (eval-when-compile (require 'cl))

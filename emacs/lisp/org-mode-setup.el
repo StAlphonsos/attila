@@ -1,4 +1,7 @@
 ;; -*- mode:emacs-lisp; indent-tabs-mode:nil -*-
+;;;
+;; My org-mode customizations.
+;;;
 
 (require 'org)
 (require 'remember)
@@ -6,14 +9,14 @@
 (setq org-directory "~/notes")
 (setq org-default-notes-file (concat org-directory "/notes.org"))
 (setq org-remember-templates
-      '(("Todo" ?t "* TODO %?\n  %i\n  %a" "~/notes/Plan.org" "To-do")
+      '(("Todo" ?t "* TODO %?\n  %i\n  %a" "~/notes/TODO.org" "PDL")
         ("Note" ?n "* %U %?\n  %i\n  %a" "~/notes/Scratch.org" "Random")
-        ("Blog" ?b "* %U %?\n\n  %i\n  %a" "~/notes/Blog.org" "Bloggable")
+        ("Blog" ?b "* %U %?\n\n  %i\n  %a" "~/notes/Blog.org" "Notes")
         ("Idea" ?i "* %^{Title}\n  %i\n  %a" "~/notes/Scrib.org" "Ideas")
         ("kWantera" ?k "* %^{Title}\n  %U\n  %i\n  %a" "~/Work/kWantera/notes.org" "Work Notes")
         ("Writing" ?w "* %^{Title}\n  %U\n   %i\n  %a" "~/notes/Scrib.org" "Scribbling")
         ("Song" ?s "* %^{Title}\n  %U\n   %i\n  %a" "~/notes/Songs.org" "Songs")
-        ("Dialogue" ?d "* %^{Title}\n  %U\n   %i" "~/notes/Dialogues.org" "Dialogues")))
+        ("Dogs" ?d "* %U %^{Title}\n" "~/notes/Dogs.org" "Ongoing")))
 (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
 (require 'org2blog-autoloads)
 (require 'netrc)

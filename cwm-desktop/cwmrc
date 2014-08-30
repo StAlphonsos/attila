@@ -18,3 +18,5 @@ bind M-numbersign       "xscreensaver-command -a"
 bind M-asterisk         open_cutbuffer
 ## EMACS wants these so hands off, cwm
 bind CM-f		unmap
+bind CM-x		unmap
+bind M-l		unmap

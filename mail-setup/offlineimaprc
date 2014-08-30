@@ -3,7 +3,7 @@
 [general]
 metadata		= ~/.offlineimap
 #accounts = StAlphonsos Gmail kWantera
-accounts		= kWantera, StAlphonsos, Gmail
+accounts		= StAlphonsos, Gmail
 maxsyncaccounts		= 1
 # Blinkenlights -- A fancy (terminal) interface
 # TTYUI         -- a text-based (terminal) interface
@@ -75,7 +75,8 @@ ssl			= no
 sslcacertfile		= /usr/local/share/certs/ca-root-nss.crt
 remoteuser		= attila
 remotepassfile		= ~/mine/creds/attila@stalphonsos.net
-folderfilter		= lambda fn: not re.match('^(spam|Archive|Admin|Trash|Junk|Spam|FreeBSD).*$',fn)
+#folderfilter		= lambda fn: not re.match('^(spam|Archive|Admin|Trash|Junk|Spam|FreeBSD).*$',fn)
+folderfilter            = lambda fn: re.match('INBOX',fn)
 # idlefolders = ['INBOX', 'INBOX.Alerts']
 #maxconnections = 2
 #holdconnectionopen = no
@@ -93,7 +94,8 @@ remotepassfile		= ~/mine/creds/cluefactory@gmail.com
 sslcacertfile		= /usr/local/share/certs/ca-root-nss.crt
 ssl			= no
 transporttunnel		= openssl s_client -host imap.gmail.com -port 993 -quiet
-folderfilter		= lambda fn: 'All Mail' not in fn
+#folderfilter		= lambda fn: 'All Mail' not in fn
+folderfilter		= lambda fn: re.match('INBOX',fn)
 expunge			= no
 
 [Repository kWanteraGmail]

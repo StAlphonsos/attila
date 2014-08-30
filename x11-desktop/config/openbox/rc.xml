@@ -284,9 +284,14 @@
         <command>xscreensaver-command -a</command>
       </action>
     </keybind>
-    <keybind key="A-S-4">
+    <!-- <keybind key="A-S-4">
       <action name="Execute">
         <command>xterm</command>
+      </action>
+    </keybind> -->
+    <keybind key="A-S-5">
+      <action name="Execute">
+        <command>nbosd -t 2100</command>
       </action>
     </keybind>
     <keybind key="A-S-6">

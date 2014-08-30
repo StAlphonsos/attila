@@ -9,6 +9,6 @@ xrdb -merge $HOME/.Xdefaults
 xmodmap $HOME/.xmodmaprc
 xsetroot -solid black
 xscreensaver &
-fbpanel &
+#fbpanel &
 openbox
 #mate-session

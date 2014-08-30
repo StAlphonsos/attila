@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2005-09-17 17:12:26 attila@stalphonsos.com>
+;;; Time-stamp: <2014-05-05 11:05:31 attila@stalphonsos.com>
 ;;;
 ;;; Stuff I use while hacking words
 ;;;
@@ -87,14 +87,20 @@
     count)
   )
 
+(defun attila-insert-tilde-n ()
+  (interactive)
+  (insert 241))
+
 (defun attila-writing-modes-hook ()
   (setq fill-column 70)
   (auto-fill-mode 1)
   (local-set-key "\M-&" 'count-sentences-in-paragraph)
   (local-set-key "\M-*" 'average-sentences-per-paragraph)
   (local-set-key "\M-^" 'words-in-sentence)
+  (local-set-key "\M-n" 'attila-insert-tilde-n)
   )
 
 (add-hook 'text-mode-hook 'attila-writing-modes-hook)
 (add-hook 'fundamental-mode-hook 'attila-writing-modes-hook)
+(add-hook 'mail-mode-hook 'attila-writing-modes-hook)
 (set-default 'fill-column 70)
