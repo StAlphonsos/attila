@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2002 by Sean Levy.  All Rights Reserved.
 #
-# Time-stamp: <2014-04-13 19:14:42 attila@stalphonsos.com>
+# Time-stamp: <2014-09-04 17:18:31 attila@stalphonsos.com>
 # $Id: numbers,v 1.1.1.1 2005/10/22 21:28:21 attila Exp $
 #
 # Author: Sean Levy <snl@cluefactory.com>
@@ -227,6 +227,10 @@ main: {
   usage(undef, 1) if $opts{h};
   $VERBOSE = $opts{V} || $opts{v};
   if (!@ARGV && !$opts{'s'}) {
+    if (defined($opts{'S'}) && ($opts{'S'} eq '-')) {
+      chomp(my $line = <STDIN>);
+      $opts{'S'} = $line;
+    }
     spew_numbers(\%opts);
   } else {
     my $new;

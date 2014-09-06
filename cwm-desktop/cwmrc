@@ -1,13 +1,19 @@
 # attila's cwmrc -*- indent-tabs-mode:nil; mode:conf -*-
 sticky no
+fontname "sans-serif:pixelsize=16:bold"
+command lock		xscreensaver-command -l
 command firefox		firefox
-command netsurf         netsurf
+# command netsurf         netsurf
 command gnumeric        gnumeric
 command vlc             vlc
 command top             "xterm -e top"
+command systat          "xterm -geometry 80x40 -e systat"
+command numz            "xterm -e numz"
+command flail           "xterm -geometry 80x40 -e flail"
 ignore xclock
 ignore xapm
-## My personal bindings:
+ignore xclock
+## My personal bindings in all window managers:
 ##    M-!  shell
 ##    M-@  editor
 ##    M-#  screensaver
@@ -15,8 +21,14 @@ ignore xapm
 bind M-exclam           xterm
 bind M-at               "emacsclient -c -n"
 bind M-numbersign       "xscreensaver-command -a"
+bind M-percent		osdhud
 bind M-asterisk         open_cutbuffer
 ## EMACS wants these so hands off, cwm
 bind CM-f		unmap
-bind CM-x		unmap
 bind M-l		unmap
+bind CM-f		unmap
+bind CMS-f		unmap
+bind CM-Delete		unmap
+## rebind M-C-x to M-C-d
+bind CM-x		unmap
+bind CM-d		delete

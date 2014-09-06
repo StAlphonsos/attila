@@ -1,0 +1,5 @@
+#!/bin/sh
+##
+RCONF=${RCONF-/etc/resolv.conf}
+[ ! -f $RCONF.bak ] && cp $RCONF $RCONF.bak
+ed $RCONF < $HOME/lib/resolvconf.ed
