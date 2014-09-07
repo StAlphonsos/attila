@@ -36,6 +36,7 @@ $AUTO_FILE = {
         'bcc-attila' => 'attila@(.*\.|)(stalphonsos|cluefactory)',
         'bcc-kwantera' => 'slevy@kwantera\.com',
         'freebsd' => '@freebsd\.org',
+        'openbsd' => '@openbsd\.org',
         'freelancer' => '@(|.*\.)freelancer\.com',
         'george' => 'george@ceetonetechnology\.com',
         'nycbug' => '@(|.*\.)nycbug\.org',

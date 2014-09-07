@@ -1,0 +1,44 @@
+#!/bin/sh
+# -*- mode:sh; indent-tabs-mode:nil; sh-indentation:2 -*-
+##
+WIFI_IF=${WIFI_IF-iwn0}
+WIRED_IF=${WIRED_IF-em0}
+WIFI_LOC=${WIFI_LOC-home}
+WIFI_OPTS_F=${WIFI_OPTS_F-$HOME/mine/creds/${WIFI_IF}-${WIFI_LOC}.txt}
+[ x"$*" = x ] && {
+    my_ip
+    exit 0
+}
+cmd=$1
+shift
+case $cmd in
+    down)
+        sudo psmap -v dhclient kill
+        sudo ifconfig $WIFI_IF down
+        sudo ifconfig $WIFI_IF inet 0.0.0.0
+        sudo ifconfig $WIRED_IF down
+        sudo ifconfig $WIRED_IF inet 0.0.0.0
+        sudo route flush
+        ;;
+    wifi)
+        opts="$*"
+        if [ x"$opts" = x ]; then
+            [ ! -f $WIFI_OPTS_F ] && {
+                echo $0: no wifi options available in $WIFI_OPTS_F
+                exit 1
+            }
+            opts="`cat $WIFI_OPTS_F`"
+        fi
+        [ x"$opts" = x-x ] && opts=""
+        sudo ifconfig $WIFI_IF $opts up && \
+            sudo dhclient $WIFI_IF
+        ;;
+    wired)
+        sudo ifconfig $WIRED_IF up && \
+            sudo dhclient $WIRED_IF
+        ;;
+    *)
+        echo usage: $0 '{down|wifi|wired}'
+        exit 1
+        ;;
+esac

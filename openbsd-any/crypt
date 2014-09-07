@@ -1,0 +1,49 @@
+#!/bin/sh
+# -*- mode:sh; indent-tabs-mode:nil; sh-indentation:2 -*-
+##
+CRYPT=${CRYPT-$HOME/personal/mine.img}
+CRYPT_MT=${CRYPT_MT-$HOME/mine}
+[ x"$*" = x ] && {
+    x=`mount | grep $CRYPT_MT`
+    if [ x"$x" = x ]; then
+        echo $0: not mounted
+        exit 1
+    else
+        echo $0: mounted: $x
+        exit 0
+    fi
+}
+cmd=$1
+shift
+[ ! -f $CRYPT ] && {
+    echo $0: crypt $CRYPT is missing
+    exit 1
+}
+[ ! -d $CRYPT_MT ] && {
+    echo $0: mountpoint $CRYPT_MT is missing
+    exit 1
+}
+case $cmd in
+    on)
+        [ -d $CRYPT_MT/tmp ] && {
+            echo $0: crypt already mounted
+            exit 1
+        }
+        sudo vnconfig -c vnd0 $CRYPT
+        sudo bioctl -c C -l /dev/vnd0a softraid0
+        mount /dev/sd1c $CRYPT_MT
+        ;;
+    off)
+        [ ! -d $CRYPT_MT/tmp ] && {
+            echo $0: crypt not mounted
+            exit 1
+        }
+        umount $CRYPT_MT
+        sudo bioctl -d sd1
+        sudo vnconfig -u vnd0
+        ;;
+    *)
+        echo usage: $0 '{on|off}'
+        exit 1
+        ;;
+esac
