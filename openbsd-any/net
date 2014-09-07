@@ -14,10 +14,10 @@ shift
 case $cmd in
     down)
         sudo psmap -v dhclient kill
-        sudo ifconfig $WIFI_IF down
         sudo ifconfig $WIFI_IF inet 0.0.0.0
-        sudo ifconfig $WIRED_IF down
+        sudo ifconfig $WIFI_IF down
         sudo ifconfig $WIRED_IF inet 0.0.0.0
+        sudo ifconfig $WIRED_IF down
         sudo route flush
         ;;
     wifi)
