@@ -13,7 +13,6 @@
         ("Note" ?n "* %U %?\n  %i\n  %a" "~/notes/Scratch.org" "Random")
         ("Blog" ?b "* %U %?\n\n  %i\n  %a" "~/notes/Blog.org" "Notes")
         ("Idea" ?i "* %^{Title}\n  %i\n  %a" "~/notes/Scrib.org" "Ideas")
-        ("kWantera" ?k "* %^{Title}\n  %U\n  %i\n  %a" "~/Work/kWantera/notes.org" "Work Notes")
         ("Writing" ?w "* %^{Title}\n  %U\n   %i\n  %a" "~/notes/Scrib.org" "Scribbling")
         ("Song" ?s "* %^{Title}\n  %U\n   %i\n  %a" "~/notes/Songs.org" "Songs")
         ("Dogs" ?d "* %U %^{Title}\n" "~/notes/Dogs.org" "Ongoing")))
