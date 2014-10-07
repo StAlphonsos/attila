@@ -1,5 +1,9 @@
 #!/bin/sh
 ##
+[ ! -f $HOME/lib/resolvconf.ed ] && {
+    echo $0: no $HOME/lib/resolvconf.ed
+    exit 1
+}
 RCONF=${RCONF-/etc/resolv.conf}
 [ ! -f $RCONF.bak ] && cp $RCONF $RCONF.bak
 ed $RCONF < $HOME/lib/resolvconf.ed

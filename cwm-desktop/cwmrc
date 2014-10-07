@@ -2,11 +2,15 @@
 sticky no
 fontname "sans-serif:pixelsize=16:bold"
 command lock		xscreensaver-command -l
+command clock		"xclock -fg green -hd green -bg black"
 command firefox		firefox
 # command netsurf         netsurf
 command gnumeric        gnumeric
+command abiword		abiword
+command audacity	audacity
 command vlc             vlc
 command top             "xterm -e top"
+command etherape	"xterm -e sudo etherape"
 command systat          "xterm -geometry 80x40 -e systat"
 command numz            "xterm -e numz"
 command flail           "xterm -geometry 80x40 -e flail"

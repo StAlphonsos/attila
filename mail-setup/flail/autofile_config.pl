@@ -36,7 +36,7 @@ $AUTO_FILE = {
         'bcc-attila' => 'attila@(.*\.|)(stalphonsos|cluefactory)',
         'bcc-kwantera' => 'slevy@kwantera\.com',
         'freebsd' => '@freebsd\.org',
-        'openbsd' => '@openbsd\.org',
+        'openbsd' => '@(|.*\.)(openbsd|mtier)\.org',
         'freelancer' => '@(|.*\.)freelancer\.com',
         'george' => 'george@ceetonetechnology\.com',
         'nycbug' => '@(|.*\.)nycbug\.org',
@@ -49,6 +49,7 @@ $AUTO_FILE = {
         'shelters' => '@animalsasia\.org',
         'blog' => 'wordpress@thisland\.haqistan\.net',
         'shopping' => '@(|.*\.)vermontcountrystore\.com|@(|.*\.)veganessentials|@(|.*\.)alliedelectronics\.com',
+        'couchsurfing' => '@(|.*\.)couchsurfing\.',
     },
 #    ':Content' => {
 #        POSIX::strftime("htmlspam_%G%m%d%H",localtime) =>

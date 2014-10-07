@@ -13,4 +13,5 @@ fontsy mscorefonts
 fontsy terminus
 xset fp rehash
 xsetroot -solid black
+osdhud -n
 cwm

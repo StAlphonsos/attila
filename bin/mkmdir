@@ -1,0 +1,18 @@
+#!/bin/sh
+##
+BASE=${MAILDIR_BASE-$HOME/Maildir}
+[ x"$*" = x ] && {
+    echo usage: $0 foldername
+    echo ...... base dir: ${BASE}
+    exit 1
+}
+nm="$1"
+[ -d ${BASE}/${nm} ] && {
+    echo $0: ${BASE}/${nm} already exists
+    exit 1
+}
+mkdir ${BASE}/${nm} && \
+  mkdir ${BASE}/${nm}/cur && \
+  mkdir ${BASE}/${nm}/new && \
+  mkdir ${BASE}/${nm}/tmp && \
+  chmod -R g=rx ${BASE}/${nm}
