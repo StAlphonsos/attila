@@ -15,6 +15,7 @@
 
 SUBDIRS?=bin lib dotfiles emacs
 MAKESYS?=bsdmake BSDmakefile gnumake GNUmakefile _makefile
+OTHERS?=cwm-desktop freebsd-laptop mail-setup openbsd-any x11-desktop
 
 DESKTOP?=x11
 LAPTOP?=freebsd
@@ -23,7 +24,7 @@ DIST_NAME=attila_env
 # Moved into make-specific file:
 #DIST_VERS!=cat VERSION
 DIST_TMP?=$(DIST_NAME)-$(DIST_VERS)
-DIST_LIST?=$(MAKESYS) $(SUBDIRS)
+DIST_LIST?=$(MAKESYS) $(SUBDIRS) $(OTHERS)
 DIST_TAR?=$(DIST_NAME)-$(DIST_VERS).tar
 DIST_TAR_GZ?=$(DIST_TAR).gz
 

@@ -111,8 +111,8 @@ alias osd_logmail='osd_cat -p bottom -d 1 -s 1 -o 0 -A left -i 150 -c green -l 3
 alias osd_logmsg='osd_cat -p top -d 1 -s 1 -o 0 -A left -i 150 -c yellow -l 5 -w'
 alias main='screen -S main -c $HOME/.screenrc-main'
 alias screens='screen -ls'
-alias a='pushd ~/tmp; ./apache.sh; popd'
-alias b='./Build'
+#alias a='pushd ~/tmp; ./apache.sh; popd'
+#alias b='./Build'
 function zt () {
   ZT="$*";
   echo "[ZT: $ZT]"
@@ -181,5 +181,8 @@ alias dsl_ip='scrape_telmex_modem ip'
 
 AWS_LS_HEADERS=${AWS_LS_HEADERS-T:Name,Image,Type,State}
 alias aws-lsec2='list_instances -H $AWS_LS_HEADERS'
+
+onbsd alias suspend='ask_before suspend sudo zzz'
+onlinux alias suspend='ask_before suspend sudo pm-suspend'
 
 [ -f $HOME/.zshaliases_local ] && source $HOME/.zshaliases_local
