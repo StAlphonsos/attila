@@ -15,6 +15,16 @@ CRYPT_MT=${CRYPT_MT-$HOME/mine}
 }
 cmd=$1
 shift
+[ x"$1" != x ] && {
+    CRYPT=$1
+    echo $0: using crypt image: $CRYPT
+    shift
+}
+[ x"$1" != x ] && {
+    CRYPT_MT=$1
+    echo $0: using crypt mountpoint: $CRYPT_MT
+    shift
+}
 [ ! -f $CRYPT ] && {
     echo $0: crypt $CRYPT is missing
     exit 1
@@ -23,27 +33,73 @@ shift
     echo $0: mountpoint $CRYPT_MT is missing
     exit 1
 }
+VNDU=`sudo vnconfig -l | grep 'not in use' | head -1 | sed -e 's/^vnd//' -e 's/:.*$//'`
+VNDPARTITION=a
+SOFTRAIDU=0
+SDPARTITION=${CRYPT_PARTITION-c}
 case $cmd in
-    on)
+    on|fsck)
         [ -d $CRYPT_MT/tmp ] && {
             echo $0: crypt already mounted
             exit 1
         }
-        sudo vnconfig -c vnd0 $CRYPT
-        sudo bioctl -c C -l /dev/vnd0a softraid0
-        mount /dev/sd1c $CRYPT_MT
+        sudo vnconfig -c vnd${VNDU} $CRYPT
+        sddev=""
+        while [ x"$sddev" = x ]; do
+            sddev=`sudo bioctl -c C -l /dev/vnd${VNDU}${VNDPARTITION} softraid${SOFTRAIDU} | sed -e 's/^.*attached as //'`
+            case "$sddev" in
+                sd[0-9]*)
+                    echo $0: $CRYPT is on $sddev
+                    ;;
+                .*passphrase.*)
+                    echo $0: $sddev
+                    sddev=""                   
+                    ;;
+                *)
+                    echo $0: huh: $sddev
+                    exit 2
+                    ;;
+            esac
+        done
+        sdpart=${sddev}${SDPARTITION}
+        if [ "$cmd" = "fsck" ]; then
+            echo $0: fscking $CRYPT_MT on $sdpart
+            sudo fsck $sdpart
+        fi
+        mount /dev/$sdpart $CRYPT_MT
+        echo $0: $CRYPT on $sdpart mounted as $CRYPT_MT
         ;;
     off)
         [ ! -d $CRYPT_MT/tmp ] && {
             echo $0: crypt not mounted
             exit 1
         }
+        sddev=`mount | grep $CRYPT_MT | awk '{print $1}'`
+        if [ x"$sddev" = x ]; then
+            echo $0: $CRYPT_MT not mounted anywhere
+            exit 1
+        fi
+        vndev=`sudo vnconfig -l | grep $CRYPT | sed -e 's/:.*$//'`
+        if [ x"$vndev" = x ]; then
+            echo $0: cannot find vnd dev for $CRYPT
+            sudo vnconfig -l
+            exit 1
+        fi
+        echo $0: unmounting $CRYPT_MT as $sddev on $vndev
         umount $CRYPT_MT
-        sudo bioctl -d sd1
-        sudo vnconfig -u vnd0
+        sddev=`echo $sddev | sed -e 's/^\/dev\///' -e 's/[a-z]$//'`
+        sudo bioctl -d $sddev
+        sudo vnconfig -u $vndev
+        ;;
+    list)
+        set -- `sudo vnconfig -l | grep -v 'not in use' | sed -e 's/:.*$//'`
+        while [ x"$*" != x ]; do
+            vnd=$1
+            shift
+        done
         ;;
     *)
-        echo usage: $0 '{on|off}'
+        echo usage: $0 '{on|fsck|off}'
         exit 1
         ;;
 esac

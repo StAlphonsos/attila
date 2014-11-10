@@ -8,6 +8,8 @@ command firefox		firefox
 command gnumeric        gnumeric
 command abiword		abiword
 command audacity	audacity
+command mumble		mumble
+command gimp            gimp
 command vlc             vlc
 command top             "xterm -e top"
 command etherape	"xterm -e sudo etherape"
@@ -23,9 +25,11 @@ ignore xclock
 ##    M-#  screensaver
 ##    M-*  follow URL
 bind M-exclam           xterm
+bind CM-exclam		"xterm -geometry 80x40"
 bind M-at               "emacsclient -c -n"
 bind M-numbersign       "xscreensaver-command -a"
 bind M-percent		osdhud
+bind CM-percent         "osdhud -t"
 bind M-asterisk         open_cutbuffer
 ## EMACS wants these so hands off, cwm
 bind CM-f		unmap

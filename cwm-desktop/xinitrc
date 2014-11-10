@@ -1,17 +1,15 @@
 #!/bin/sh
 ##
-_xfonts=${XFONTDIR-/usr/local/lib/X11/fonts}
-fontsy () {
-  [ -d ${_xfonts}/$1 ] && xset fp+ ${_xfonts}/$1
-}
-[ -f $HOME/.Xdefaults ] && xrdb -merge $HOME/.Xdefaults
-[ -f $HOME/.xmodmaprc ] && xmodmap $HOME/.xmodmaprc
-fontsy Droid
-fontsy anonymous-pro
-fontsy jmk
-fontsy mscorefonts
-fontsy terminus
+gsfd=${GS_FONT_DIR-/usr/local/share/ghostscript/fonts}
+xfd=${X_FONT_DIR-/usr/local/lib/X11/fonts}
+for subd in Droid webfonts URW profont mscorefonts; do
+  [ -d ${xfd}/${subd} ] && xset +fp ${xfd}/${subd}/
+done
+[ -d ${gsfd} ] && xset +fp ${gsfd}/
 xset fp rehash
+xrdb -merge $HOME/.Xdefaults
+xmodmap $HOME/.xmodmaprc
 xsetroot -solid black
-osdhud -n
+xscreensaver &
+osdhud -Cwn -i em0
 cwm
