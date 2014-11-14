@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-05-05 11:05:31 attila@stalphonsos.com>
+;;; Time-stamp: <2014-11-12 15:40:42 attila@stalphonsos.com>
 ;;;
 ;;; Stuff I use while hacking words
 ;;;
@@ -104,3 +104,9 @@
 (add-hook 'fundamental-mode-hook 'attila-writing-modes-hook)
 (add-hook 'mail-mode-hook 'attila-writing-modes-hook)
 (set-default 'fill-column 70)
+(autoload 'markdown-mode "markdown-mode"
+   "Major mode for editing Markdown files" t)
+(add-to-list 'auto-mode-alist '("\\.text\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.txt\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
