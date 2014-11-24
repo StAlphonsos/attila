@@ -1,10 +1,10 @@
 ;; -*- emacs-lisp -*-
 ;;
-;; Time-stamp: <2003-07-04 13:03:10 EDT>
+;; Time-stamp: <2014-11-17 17:41:07 attila@stalphonsos.com>
 ;;
 ;; My .signature fu
 ;;
-(setq *signature-dir* (expand-file-name "~/.signatures/"))
+(setq *signature-dir* (expand-file-name "~/.sigs/"))
 
 (defun signature-apropos (from)
   (let ((sf (concat *signature-dir* from)))
