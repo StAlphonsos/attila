@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-11-19 14:22:33 attila@stalphonsos.com>
+;;; Time-stamp: <2014-11-27 11:40:47 attila@stalphonsos.com>
 ;;;
 ;;; attila is a schizophrenic freak.
 ;;; no, he's not.
@@ -220,6 +220,7 @@
       mu4e-refile-folder (lambda (msg) (attila-mu4e-refile-folder msg))
       mu4e-user-mail-address-regexp "snl@cluefactory\.com\\|attila@stalphonsos.com\\|attila@stalphonsos\.net\\|cluefactory@gmail\.com"
       mu4e-get-mail-command "/home/attila/Mail/grind_mail.sh"
+      mu4e-view-show-addresses t
       mu4e-maildir-shortcuts
       '( ("/attila@stalphonsos.com/INBOX" . ?a)
          ("/cluefactory@gmail.com/INBOX" . ?g)
