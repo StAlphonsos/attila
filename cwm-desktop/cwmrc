@@ -1,9 +1,10 @@
 # attila's cwmrc -*- indent-tabs-mode:nil; mode:conf -*-
 sticky no
 fontname "sans-serif:pixelsize=16:bold"
-command lock		xscreensaver-command -l
+command lock		"xscreensaver-command -l"
 command clock		"xclock -fg green -hd green -bg black"
 command firefox		firefox
+command ff_profile      "firefox -ProfileManager -new-instance"
 # command netsurf         netsurf
 command gnumeric        gnumeric
 command abiword		abiword
@@ -15,7 +16,7 @@ command top             "xterm -e top"
 command etherape	"xterm -e sudo etherape"
 command systat          "xterm -geometry 80x40 -e systat"
 command numz            "xterm -e numz"
-command flail           "xterm -geometry 80x40 -e flail"
+command flail           "xterm -e flail"
 ignore xclock
 ignore xapm
 ignore xclock
@@ -40,3 +41,5 @@ bind CM-Delete		unmap
 ## rebind M-C-x to M-C-d
 bind CM-x		unmap
 bind CM-d		delete
+## suspend key: ask first
+bind CMS-z		"ask_before suspend zzz"

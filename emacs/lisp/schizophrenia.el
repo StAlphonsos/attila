@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-11-27 11:40:47 attila@stalphonsos.com>
+;;; Time-stamp: <2014-12-10 09:27:15 attila@stalphonsos.com>
 ;;;
 ;;; attila is a schizophrenic freak.
 ;;; no, he's not.
@@ -184,7 +184,7 @@
   (local-set-key "\C-ci" 'attila-set-mail-identity)
   (local-set-key "\C-c\C-a" 'attila-set-sta-outbound)
   (local-set-key "\C-c\C-g" 'attila-set-gmail-outbound)
-  (local-set-key "\C-c\C-i" 'mail-complete)
+  (local-set-key "\C-c\C-i" 'completion-at-point)
   (local-set-key "\C-c\C-s" 'sign-mail-message)
   (attila-set-mail-identity)
   (message "[attila schizophrenia in effect; IDs: C-c i, Addresses: C-c Tab]"))
@@ -249,6 +249,7 @@
 (autoload 'mc-install-write-mode "mailcrypt" nil t)
 (autoload 'mc-install-read-mode "mailcrypt" nil t)
 (add-hook 'mail-mode-hook 'mc-install-write-mode)
+(add-hook 'mu4e-compose-mode-hook 'mc-install-write-mode)
 ;(add-hook 'vm-mode-hook 'mc-install-read-mode)
 ;(add-hook 'vm-summary-mode-hook 'mc-install-read-mode)
 ;(add-hook 'vm-virtual-mode-hook 'mc-install-read-mode)
