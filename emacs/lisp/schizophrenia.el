@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-12-10 09:27:15 attila@stalphonsos.com>
+;;; Time-stamp: <2014-12-11 18:18:34 attila@stalphonsos.com>
 ;;;
 ;;; attila is a schizophrenic freak.
 ;;; no, he's not.
@@ -224,7 +224,9 @@
       mu4e-maildir-shortcuts
       '( ("/attila@stalphonsos.com/INBOX" . ?a)
          ("/cluefactory@gmail.com/INBOX" . ?g)
+         ("/slashdot" . ?S)
          ("/openbsd" . ?b)
+         ("/couchsurfing" . ?c)
          ("/torbsd" . ?B)
          ("/torproject" . ?t)
          ("/nycbug" . ?n)
