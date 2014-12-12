@@ -76,17 +76,18 @@ setprompt() {
     _load_str=" $_ldstr"
     load_str_="$_ldstr "
   fi
+  _arch=`uname -m`
   case x"$TERM" in
     xemacs|xdumb)
-      export PROMPT="${_venv}${_load_str}"' ${git_branch}%2~ %h'$PROMPTAIL
+      export PROMPT="%m:${_arch}${_venv}${_load_str}"' ${git_branch}%2~ %h'$PROMPTAIL
       export RPROMPT=""
       ;;
     xcygwin|xeterm|xxterm)
-      export PROMPT='%m %h%B'$PROMPTAIL'%f'%b
+      export PROMPT='%m:'${_arch}' %h%B'$PROMPTAIL'%f'%b
       export RPROMPT="<%2~>${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
       ;;
     *)
-      export PROMPT='%m %h%B'$PROMPTAIL'%f'%b
+      export PROMPT='%m:'${_arch}' %h%B'$PROMPTAIL'%f'%b
       export RPROMPT="<%2~>${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
   #    export PROMPT='%S[%D{%H:%M:%S}]%s %m %i'$PROMPTAIL'%f'
   #    export RPROMPT=""
