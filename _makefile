@@ -34,7 +34,7 @@ help:
 	@$(SED) -e '1,/^##+/d' -e '/^##-/,$$d' -e 's/^# //' < _makefile
 
 all install uninstall clean distclean::
-	@(for dir in $(SUBDIRS); do (cd $$dir; $(MAKE) $(MFLAGS) S=$(S) MM=$(MM) $@); done)
+	@(for dir in $(SUBDIRS); do (cd $$dir; $(MAKE) -f $(MAKEFILE) $(MFLAGS) S=$(S) MM=$(MM) $@); done)
 
 distclean::
 	$(RM) -f $(DIST_TAR) $(DIST_TAR_GZ)
