@@ -1,36 +1,44 @@
 #!/bin/sh
+##
+LOCALHOME=${LOCALHOME-${HOME}}
 
-[ x$LOCALHOME = x ] && LOCALHOME=$HOME
-#echo '[ Prepare: LOCALHOME='$LOCALHOME' ]'
-if [ x$SSH_AGENT_PID = x -a x"$*" = "x"  ]; then
-  [ -f $LOCALHOME/.ssh/agent_info ] && source $LOCALHOME/.ssh/agent_info
-  if [ x$SSH_AGENT_PID = x ]; then
-    running=0
-  else
-    running=`ps $SSH_AGENT_PID | sed 1d | grep ssh-agent | wc -l | perl -lpe 's/[ \t]+//gs'`
-#    echo '[ Check 1: running='$running' pid '$SSH_AGENT_PID' ]'
-  fi
+splort () {
+    [ -t 0 ] && echo '['"$*"']'
+}
+
+start_agent () {
+    eval `ssh-agent -s`
+    [ -f $LOCALHOME/.ssh/agent_info ] && rm $LOCALHOME/.ssh/agent_info
+    echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK	 >$LOCALHOME/.ssh/agent_info
+    echo export SSH_AUTH_SOCK		>>$LOCALHOME/.ssh/agent_info
+    echo SSH_AGENT_PID=$SSH_AGENT_PID	>>$LOCALHOME/.ssh/agent_info
+    echo export SSH_AGENT_PID		>>$LOCALHOME/.ssh/agent_info
+    splort "Started agent pid $SSH_AGENT_PID"
+}
+
+[ -f $LOCALHOME/.ssh/agent_info ] && . $LOCALHOME/.ssh/agent_info
+
+active=1
+ssh-add -l >/dev/null 2>&1 || active=0
+
+if [ $active = 0 ]; then
+    if [ x$SSH_AGENT_PID != x ]; then
+	kill -0 $SSH_AGENT_PID >/dev/null 2>&1 && active=1
+    fi
+    if [ $active = 0 ]; then
+	start_agent
+    fi
 else
-  if [ x"$*" = "xforce" ]; then
-    running=0
-  else
-    running=`ps $SSH_AGENT_PID | sed 1d | grep ssh-agent | wc -l | perl -lpe 's/[ \t]+//gs'`
-#    echo '[ Check 2: running='$running' ]'
-  fi
+    if [ x"$*" = "x-force" ]; then
+	start_agent
+    fi
 fi 
-if [ $running = 0 ]; then
-  [ -t 0 ] && echo '[ Agent not running ]'
-  echo '[ Agent not running ]'
-  eval `ssh-agent -s`
-  [ -f $LOCALHOME/.ssh/agent_info ] && rm $LOCALHOME/.ssh/agent_info
-fi
-if [ ! -f $LOCALHOME/.ssh/agent_info ]; then
-  echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK >$LOCALHOME/.ssh/agent_info
-  echo export SSH_AUTH_SOCK >>$LOCALHOME/.ssh/agent_info
-  echo SSH_AGENT_PID=$SSH_AGENT_PID >>$LOCALHOME/.ssh/agent_info
-  echo export SSH_AGENT_PID >>$LOCALHOME/.ssh/agent_info
-fi
-need_id=`ssh-add -l | grep "no identities" | wc -l | perl -lpe 's/[ \t]+//gs'`
+
+need_id=`ssh-add -l 2>&1 | grep "no identities" | wc -l | perl -lpe 's/[ \t]+//gs'`
 if [ $need_id = 1 ]; then
-  ssh-add
+    splort No identities - adding default
+    ssh-add
+else
+    nids=`ssh-add -l 2>/dev/null | grep '^[0-9]' | wc -l | perl -lpe 's/[ \t]+//gs'`
+    splort Agent pid $SSH_AGENT_PID running w/${nids} identities
 fi
