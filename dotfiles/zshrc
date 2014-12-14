@@ -84,11 +84,11 @@ setprompt() {
       ;;
     xcygwin|xeterm|xxterm)
       export PROMPT='%m:'${_arch}' %h%B'$PROMPTAIL'%f'%b
-      export RPROMPT="<%2~>${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
+      export RPROMPT="<%2~> ${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
       ;;
     *)
       export PROMPT='%m:'${_arch}' %h%B'$PROMPTAIL'%f'%b
-      export RPROMPT="<%2~>${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
+      export RPROMPT="<%2~> ${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
   #    export PROMPT='%S[%D{%H:%M:%S}]%s %m %i'$PROMPTAIL'%f'
   #    export RPROMPT=""
       ;;
