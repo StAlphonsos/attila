@@ -5,7 +5,7 @@
 
 (require 'org)
 (require 'remember)
-(org-remember-insinuate)
+;(org-remember-insinuate)
 (setq org-directory "~/notes")
 (setq org-default-notes-file (concat org-directory "/notes.org"))
 (setq org-remember-templates

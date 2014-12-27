@@ -48,7 +48,7 @@ setprompt() {
   git_branch_=""
   dirty=""
   [ -x /usr/bin/git -o -x /usr/local/bin/git -o -x $HOME/bin/git ] && {
-    _branch="`git status -sb 2>/dev/null | sed -e '2,$d' -e 's/^##[ ]*//'`"
+    _branch="`git status -sb 2>/dev/null | sed -e '2,$d' -e 's/^##[ ]*//' -e 's/\.\.\..*$//'`"
     _dirty="expr 0 + `git status -sb 2>/dev/null | wc -l`"
     _dirty=`eval $_dirty`
     [ x"$_branch" != x ] && {
@@ -58,6 +58,8 @@ setprompt() {
     }
   }
   A_GIT_BRANCH="${git_branch}"
+  [ x"${A_GIT_BRANCH}" = x ] && A_GIT_BRANCH=""
+  ## current load, colored
   _cur_load=`uptime | awk -F, '{print $4,$5,$6;}'|sed -e 's/[^0-9\. ]//g'|awk '{print $1}'`
   _load_gt1=`expr $_cur_load \> 0.9`
   _load_gt2=`expr $_cur_load \> 1.9`
@@ -79,7 +81,7 @@ setprompt() {
   _arch=`uname -m`
   case x"$TERM" in
     xemacs|xdumb)
-      export PROMPT="%m:${_arch}${_venv}${_load_str}"' ${git_branch}%2~ %h'$PROMPTAIL
+      export PROMPT="%2~ ${venv_}${load_str_}${git_branch_}%h"$PROMPTAIL
       export RPROMPT=""
       ;;
     xcygwin|xeterm|xxterm)

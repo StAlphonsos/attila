@@ -1,7 +1,5 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-12-11 18:18:34 attila@stalphonsos.com>
-;;;
 ;;; attila is a schizophrenic freak.
 ;;; no, he's not.
 ;;; hey, what are you doing here?
@@ -13,24 +11,28 @@
 ;;; oh, stop.
 ;;;
 
-(require 'smtpmail)
-(require 'mailcrypt)
-(require 'mu4e)
-(require 'signature-fu)
-(load-library "mc-toplev")
+;;; This file is always under heavy modification.  It contains all of
+;;; the hacks and glue I need to deal with email in Emacs.
+;;;
+;;; I read multiple mail boxes, for multiple identities, all from
+;;; my laptop.  Most of them are IMAP, but a couple are POP.  In
+;;; all cases, I need to be able to send mail as any of those
+;;; identities, and it's irritating to do so without some support,
+;;; so this code is that.  So there.
 
-;;
-; I read multiple mail boxes, for multiple identities, all from
-; my laptop.  Most of them are IMAP, but a couple are POP.  In
-; all cases, I need to be able to send mail as any of those
-; identities, and it's irritating to do so without some support,
-; so this code is that.  So there.
-;;
+(require 'smtpmail)                     ;outbound
+(require 'mailcrypt)                    ;crypto
+(require 'mu4e)                         ;a not-too-terrible mua
+(require 'signature-fu)                 ;my .sig hacks
+(load-library "mc-toplev")              ;dunno why mailcrypt rolls this way
 
 (setq *attila-smtp-alist*
-      '((StA ("smtp.i.stalphonsos.net" 25 plain "attila@stalphonsos.com" "attila"))
-        (Cluefactory ("smtp.i.stalphonsos.net" 25 plain "snl@cluefactory.com" "Sean Levy"))
-        (Gmail ("smtp.gmail.com" 587 starttls "cluefactory@gmail.com" "Sean Levy"))
+      '((StA
+         ("smtp.i.stalphonsos.net" 25 plain "attila@stalphonsos.com" "attila"))
+        (Cluefactory
+         ("smtp.i.stalphonsos.net" 25 plain "snl@cluefactory.com" "Sean Levy"))
+        (Gmail
+         ("smtp.gmail.com" 587 starttls "cluefactory@gmail.com" "Sean Levy"))
         )
       )
 
@@ -46,12 +48,15 @@
 (defun lookup-mail-identity (addr)
   (let ((id nil))
     (if (not (null addr))
-        (mapc '(lambda (i)
-                 (if (string-match addr (cadr i))
-                     (cond ((null id) (setq id (car i)))
-                           ((listp id) (setq id (append id (list (car i)))))
-                           (t (setq id (append (list id) (list (car i))))))))
-              *attila-identity-alist*))
+        (progn
+          ;; For mu4e, since dyn-folder can call us
+          (if (listp addr) (setq addr (cdar addr)))
+          (mapc '(lambda (i)
+                   (if (string-match addr (cadr i))
+                       (cond ((null id) (setq id (car i)))
+                             ((listp id) (setq id (append id (list (car i)))))
+                             (t (setq id (append (list id) (list (car i))))))))
+                *attila-identity-alist*)))
     (if (null id)
         *attila-current-identity*
       id)))
@@ -177,7 +182,7 @@
         smtpmail-default-smtp-server "smtp.i.stalphonsos.net"
         smtpmail-smtp-server "smtp.i.stalphonsos.net"
         smtpmail-smtp-user "attila"
-        smtpmail-smtp-server 25))
+        smtpmail-smtp-service 25))
 
 (defun attila-mail-mode-hook ()
   (interactive)
@@ -187,7 +192,7 @@
   (local-set-key "\C-c\C-i" 'completion-at-point)
   (local-set-key "\C-c\C-s" 'sign-mail-message)
   (attila-set-mail-identity)
-  (message "[attila schizophrenia in effect; IDs: C-c i, Addresses: C-c Tab]"))
+  (message "[Schizophrenia in effect; IDs: C-c i, Addresses: C-c Tab]"))
 
 (setq *attila-schizoid-mu4e-setup*
       '((ClueFactory ((sent "/attila@stalphonsos.com/Sent")
@@ -200,6 +205,9 @@
                 (drafts "/cluefactory@gmail.com/[Gmail].Drafts")
                 (trash "/cluefactory@gmail.com/[Gmail].Trash")))))
 
+;; dynamically figure out which drafts/trash/sent folder applies
+;; to an outgoing message by looking at what identity is being
+;; used to write it and indexing into *attila-schizoid-mu4e-setup*
 (defun attila-mu4e-dyn-folder (msg what)
   (let* ((to (if msg (mu4e-message-field msg :to) nil))
          (from (if msg (mu4e-message-field msg :from) nil))
@@ -213,18 +221,24 @@
 (defun attila-mu4e-refile-folder (msg)
   "/archive")
 
+;; Set all interesting mu4e variables in one go:
 (setq mu4e-maildir "~/Mail"
+      ;; These can be functions, in which case they are passed the message
+      ;; that we're replying to (or whatever):
       mu4e-sent-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'sent))
       mu4e-drafts-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'drafts))
       mu4e-trash-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'trash))
       mu4e-refile-folder (lambda (msg) (attila-mu4e-refile-folder msg))
+      ;; All of my identities... should be put together by code instead XXX
       mu4e-user-mail-address-regexp "snl@cluefactory\.com\\|attila@stalphonsos.com\\|attila@stalphonsos\.net\\|cluefactory@gmail\.com"
+      ;; Script that manages to invoke bmf, albeit clumsily
       mu4e-get-mail-command "/home/attila/Mail/grind_mail.sh"
       mu4e-view-show-addresses t
       mu4e-maildir-shortcuts
       '( ("/attila@stalphonsos.com/INBOX" . ?a)
          ("/cluefactory@gmail.com/INBOX" . ?g)
          ("/slashdot" . ?S)
+         ("/freelancer" . ?f)
          ("/openbsd" . ?b)
          ("/couchsurfing" . ?c)
          ("/torbsd" . ?B)

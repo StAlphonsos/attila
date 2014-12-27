@@ -9,7 +9,7 @@
 
 /* LICENSE:
  *
- * Copyright (C) 1999-2014 by attila <attila@stalphonsos.com>
+ * Copyright (C) 2014 by attila <attila@stalphonsos.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the

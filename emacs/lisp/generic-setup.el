@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-05-06 16:37:24 attila@stalphonsos.com>
+;;; Time-stamp: <2014-12-26 18:35:03 attila@stalphonsos.com>
 ;;;
 ;;; Generic EMACS setup fu, mainly globals and other random nonsense
 ;;; Pulled in by ~/.emacs on Unix systems.
@@ -32,6 +32,11 @@
 (setq shell-multiple-shells nil)
 (setq frame-title-format
       (format "[EMACS] %s@%s: %%b" (getenv "LOGNAME") (getenv "NODENAME")))
+(if (getenv "MODELINE_HOST")
+    (setq mode-line-front-space
+          (list :eval (list 'concat
+                            (format "[%s]" (getenv "MODELINE_HOST"))
+                            '(if (display-graphic-p) "X" "T")))))
 (defun insert-date ()
   (interactive)
   (insert (format-time-string "%Y-%m-%d")))
@@ -42,6 +47,8 @@
 (global-font-lock-mode 1)
 (setq Info-directory-list (append (list (expand-file-name "~/emacs/info"))
                                   Info-default-directory-list))
+(setq Info-directory-list (append (list (expand-file-name "~/share/info"))
+                                  Info-directory-list))
 (setq diary-file "~/personal/diary")
 ;(setq explicit-shell-file-name "/usr/bin/zsh"
 ;      explicit-zsh-args '("-l"))
