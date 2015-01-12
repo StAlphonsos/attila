@@ -1,6 +1,5 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-11-12 15:40:42 attila@stalphonsos.com>
 ;;;
 ;;; Stuff I use while hacking words
 ;;;

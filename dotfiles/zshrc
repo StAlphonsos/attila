@@ -12,7 +12,7 @@ setopt nohup
 
 am_root=0
 [ x"`id -u`" = x0 ] && am_root=1
-PROMPTAIL='> '
+PROMPTAIL='$ '
 if [ $am_root = 1 ]; then
   PROMPTAIL='# '
 fi
@@ -85,12 +85,12 @@ setprompt() {
       export RPROMPT=""
       ;;
     xcygwin|xeterm|xxterm)
-      export PROMPT='%m:'${_arch}' %h%B'$PROMPTAIL'%f'%b
-      export RPROMPT="<%2~> ${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
+      export PROMPT="%B${PROMPTAIL}%f%b"
+      export RPROMPT="%n@%m #%h <%2~> ${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
       ;;
     *)
-      export PROMPT='%m:'${_arch}' %h%B'$PROMPTAIL'%f'%b
-      export RPROMPT="<%2~> ${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
+      export PROMPT="%h%B'${PROMPTAIL}%f%b"
+      export RPROMPT="%n@%m #%h <%2~> ${git_branch}${load_str_}${venv_}%S[%D{%H:%M:%S%z}]%s"
   #    export PROMPT='%S[%D{%H:%M:%S}]%s %m %i'$PROMPTAIL'%f'
   #    export RPROMPT=""
       ;;

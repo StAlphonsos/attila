@@ -14,18 +14,21 @@
 ;;; This file is always under heavy modification.  It contains all of
 ;;; the hacks and glue I need to deal with email in Emacs.
 ;;;
-;;; I read multiple mail boxes, for multiple identities, all from
-;;; my laptop.  Most of them are IMAP, but a couple are POP.  In
-;;; all cases, I need to be able to send mail as any of those
-;;; identities, and it's irritating to do so without some support,
-;;; so this code is that.  So there.
+;;; I read multiple mail boxes, for multiple identities, all from my
+;;; laptop.  Most of them are IMAP, but a couple are POP.  In all
+;;; cases, I need to be able to send mail as any of those identities,
+;;; and it's irritating to do so without some support, so this code is
+;;; that.  So there.
 
 (require 'smtpmail)                     ;outbound
 (require 'mailcrypt)                    ;crypto
 (require 'mu4e)                         ;a not-too-terrible mua
 (require 'signature-fu)                 ;my .sig hacks
+(require 'mml)                          ;mime fu in composition buffers
 (load-library "mc-toplev")              ;dunno why mailcrypt rolls this way
+(mc-setversion "gpg")
 
+;; Maps identity token (atom) -> (server port type email name)
 (setq *attila-smtp-alist*
       '((StA
          ("smtp.i.stalphonsos.net" 25 plain "attila@stalphonsos.com" "attila"))
@@ -36,6 +39,7 @@
         )
       )
 
+;; Maps identity token (atom) -> (address index)
 (setq *attila-identity-alist*
       '((StA "attila <attila@stalphonsos.com>" 0)
         (Cluefactory "Sean Levy <snl@cluefactory.com>" 1)
@@ -135,7 +139,7 @@
   (let ((rec (assoc id *attila-identity-alist*)))
     (if (null rec)
         (setq rec (assoc *attila-current-identity* *attila-identity-alist*)))
-    (car (cdr (cdr rec)))))             ;elisp has no caddr? shocked, i say.
+    (car (cdr (cdr rec)))))
 
 (defun next-mail-identity (id)
   (let* ((pos (get-mail-identity-pos id))
@@ -186,16 +190,15 @@
 
 (defun attila-mail-mode-hook ()
   (interactive)
+  (mml-mode)
   (local-set-key "\C-ci" 'attila-set-mail-identity)
-  (local-set-key "\C-c\C-a" 'attila-set-sta-outbound)
-  (local-set-key "\C-c\C-g" 'attila-set-gmail-outbound)
   (local-set-key "\C-c\C-i" 'completion-at-point)
   (local-set-key "\C-c\C-s" 'sign-mail-message)
   (attila-set-mail-identity)
   (message "[Schizophrenia in effect; IDs: C-c i, Addresses: C-c Tab]"))
 
 (setq *attila-schizoid-mu4e-setup*
-      '((ClueFactory ((sent "/attila@stalphonsos.com/Sent")
+      '((Cluefactory ((sent "/attila@stalphonsos.com/Sent")
                       (drafts "/attila@stalphonsos.com/Drafts")
                       (trash "/attila@stalphonsos.com/Garbage")))
         (StA ((sent "/attila@stalphonsos.com/Sent")
@@ -211,11 +214,11 @@
 (defun attila-mu4e-dyn-folder (msg what)
   (let* ((to (if msg (mu4e-message-field msg :to) nil))
          (from (if msg (mu4e-message-field msg :from) nil))
-
          (id (or (lookup-mail-identity to)
                  (lookup-mail-identity from)
                  *attila-current-identity*))
          (tbl (assoc id *attila-schizoid-mu4e-setup*)))
+    (message "attila-mu4e-dyn-folder: to:%s from:%s id:%s" to from id)
     (cadr (assoc what (cadr tbl)))))
          
 (defun attila-mu4e-refile-folder (msg)
@@ -224,16 +227,25 @@
 ;; Set all interesting mu4e variables in one go:
 (setq mu4e-maildir "~/Mail"
       ;; These can be functions, in which case they are passed the message
-      ;; that we're replying to (or whatever):
+      ;; that we're replying to (or whatever).  I dynamically decide
+      ;; what sent/drafts/trash folder to use based on the identity involved
+      ;; in the email.
       mu4e-sent-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'sent))
       mu4e-drafts-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'drafts))
       mu4e-trash-folder (lambda (msg) (attila-mu4e-dyn-folder msg 'trash))
       mu4e-refile-folder (lambda (msg) (attila-mu4e-refile-folder msg))
+      mu4e-headers-include-related t    ;drag related msgs into headers view
+      mu4e-headers-results-limit 800    ;default is 500; jack it up a bit
       ;; All of my identities... should be put together by code instead XXX
-      mu4e-user-mail-address-regexp "snl@cluefactory\.com\\|attila@stalphonsos.com\\|attila@stalphonsos\.net\\|cluefactory@gmail\.com"
+      mu4e-user-mail-address-list
+      '(
+        "attila@stalphonsos.com"
+        "snl@cluefactory.com"
+        "cluefactory@gmail.com"
+        )
       ;; Script that manages to invoke bmf, albeit clumsily
       mu4e-get-mail-command "/home/attila/Mail/grind_mail.sh"
-      mu4e-view-show-addresses t
+      mu4e-view-show-addresses t        ;i prefer to see actual email addys
       mu4e-maildir-shortcuts
       '( ("/attila@stalphonsos.com/INBOX" . ?a)
          ("/cluefactory@gmail.com/INBOX" . ?g)
@@ -245,21 +257,20 @@
          ("/torproject" . ?t)
          ("/nycbug" . ?n)
          )
+      ;; Set defaults, although this never seems to actually work... ?
       mu4e-reply-to-address "attila@stalphonsos.com"
       user-mail-address "attila@stalphonsos.com"
       user-full-name "attila")
 
+;; When we enter mail composition modes run my hook
 (add-hook 'mail-mode-hook 'attila-mail-mode-hook)
 (add-hook 'mu4e-compose-mode-hook 'attila-mail-mode-hook)
+;; I have hacked flail so that it uses .eml as its temp file
+;; extension.  This is solely so I can do this:
+(add-to-list 'auto-mode-alist '("\\.eml$" . mail-mode))
 ;(setq mail-default-headers "FCC: ~/Mail/outgoing")
 (setq send-mail-function 'smtpmail-send-it)
 (setq message-send-mail-function 'smtpmail-send-it)
-
-
-;;
-; Mailcrypt is my buddy
-;;
-(mc-setversion "gpg")
 ;(setq mc-passwd-timeout 86400
 ;      mc-password-reader 'vm-read-password) ;my hack
 (autoload 'mc-install-write-mode "mailcrypt" nil t)
