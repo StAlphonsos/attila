@@ -1,6 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
-;;; Time-stamp: <2014-01-14 22:06:39 attila@stalphonsos.com>
+;;; Time-stamp: <2015-01-13 16:13:13 attila@stalphonsos.com>
 ;;;
 ;;; Stuff I use mainly for hacking.
 ;;;
@@ -102,6 +102,36 @@
   (auto-fill-mode 0)
   )
 
+;; SYMVARS
+;;
+;; The idea is that you can create context-sensitive bindings for
+;; buffer-local variables based on symbolic links present in the
+;; directory tree.  For instance:
+;;
+;;    $ cd
+;;    $ ln -s attila .user-login-name
+;;    $ ln -s stalphonsos.com .mail-host-name
+;;    $ cd src/someproject
+;;    $ ln -s snl .user-login-name
+;;    $ ln -s someproject.org .mail-hostname
+;;
+;; When hacking on files in ~, user-login-name and mail-host-name will
+;; be "attila" and "stalphonsos.com", respectively.  When hacking on
+;; files under ~/src/someproject they will instead be "snl" and
+;; "someproject.org".  Thus is the power of symvars.
+;;
+;; You can sort of accomplish this in other ways depending on your dev
+;; env.  Git, for instance, makes it easy for you to do this vis a vis
+;; git.  I haven't seen anything else like symvars for emacs, though.
+;;
+;; This works by pushing attila-hack-dir-symvars onto a mode's list of
+;; hooks, which we do near the end of this file, e.g.:
+;;
+;;    (add-hook 'write-file-hooks 'attila-hack-dir-symvars)
+;;
+;; Whenever a file is written we try to re-bind all of the known
+;; symvars.
+
 (defun attila-symvar-link-value (fname)
   "Examine the attributes of the named file and return a string if the
 file exists and refers to a symbolic link, and nil otherwise.  The string
@@ -159,6 +189,7 @@ the link points at, after making that variable buffer-local."
   )
 )
 
+;; List of known symvars.  Push stuff onto it to add more.
 (setq *attila-dir-symvars*
       '(user-login-name
         user-full-name

@@ -1,5 +1,6 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
 ;;;
+;;; Time-stamp: <2015-01-13 16:14:46 attila@stalphonsos.com>
 ;;;
 ;;; Stuff I use while hacking words
 ;;;
@@ -109,3 +110,4 @@
 (add-to-list 'auto-mode-alist '("\\.txt\\'" . markdown-mode))
 (add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
 (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.mmd\\'" . markdown-mode))

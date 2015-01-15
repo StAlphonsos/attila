@@ -1,9 +1,10 @@
 ;;; -*- mode:emacs-lisp; indent-tabs-mode:nil; tab-width:2 -*-
-;;
-;;; copyright (c) 1997-2005 by attila <attila@stalphonsos.com>.
-;;;                                        all rights reserved.
 ;;;
-;;; Time-stamp: <2012-06-18 15:53:13 attila@stalphonsos.com>
+;;; copyright (c) 1997-2015 by attila <attila@stalphonsos.com>.
+;;;                                        all rights reserved.
+;;;        released under the ISC simplified BSD-style license.
+;;;
+;;; Time-stamp: <2015-01-13 16:05:02 attila@stalphonsos.com>
 ;;;
 ;;; Template file fu.  Pretty simple, really.  I've been using this
 ;;; code (or some variation on it) for almost a decade now, in every
@@ -73,6 +74,8 @@
                 "template.s")
                ((string-match ".*\\.txt$" buffer-file-name)
                 "template.txt")
+               ((string-match ".*\\.(md|mmd)$" buffer-file-name)
+                "template.md")
                ((string-match ".*\\.htmpl$" buffer-file-name)
                 "template.htmpl")
                ((string-match ".*\\.html$" buffer-file-name)
