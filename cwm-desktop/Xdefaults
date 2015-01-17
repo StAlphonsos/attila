@@ -1,7 +1,13 @@
-XTerm*loginShell:true
-XTerm*vt100.faceName: Mono
-XTerm*vt100.faceSize: 10
-XTerm*vt100.scrollBar: false
+XTerm*vt100.faceName: Inconsolata
+XTerm*vt100.faceSize: 14
 XTerm*vt100.foreground: green
 XTerm*vt100.background: black
+XTerm*vt100.geometry: 80x24
 XTerm*vt100.metaSendsEscape: true
+XTerm*vt100.scrollBar: false
+Xft.antialias:  1
+Xft.dpi:        96
+Xft.hinting:    1
+Xft.hintstyle:  hintslight
+Xft.lcdfilter:  lcddefault
+Xft.rgba:       rgb

@@ -169,8 +169,7 @@
   (let ((id (get-mail-identity)))
     (message "Mail identity: %s" id)
     (if (not (mail-identity-set-p))
-        (set-mail-identity id)
-      (set-mail-identity (next-mail-identity id)))))
+        (set-mail-identity id))))
 
 (defun attila-set-gmail-outbound ()
   (interactive)

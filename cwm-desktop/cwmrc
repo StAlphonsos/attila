@@ -12,11 +12,11 @@ command audacity	audacity
 command mumble		mumble
 command gimp            gimp
 command vlc             vlc
-command top             "xterm -e top"
-command etherape	"xterm -e sudo etherape"
-command systat          "xterm -geometry 80x40 -e systat"
-command numz            "xterm -e numz"
-command flail           "xterm -e flail"
+command top             "xterm -fn fixed -e top"
+command etherape	"xterm -fn fixed -e sudo etherape"
+command systat          "xterm -fn fixed -geometry 80x40 -e systat"
+command numz            "xterm -fn fixed -e numz"
+command flail           "xterm -fn fixed -e flail"
 ignore xclock
 ignore xapm
 ignore xclock
@@ -25,9 +25,9 @@ ignore xclock
 ##    M-@  editor
 ##    M-#  screensaver
 ##    M-*  follow URL
-bind M-exclam           xterm
-bind CM-exclam		"xterm -geometry 80x40"
-bind M-at               "emacsclient -c -n"
+bind M-exclam           "xterm -fn fixed"
+bind CM-exclam		"xterm -fn fixed -geometry 80x40"
+bind M-at               "emacsclient -c"
 bind M-numbersign       "xscreensaver-command -a"
 bind M-percent		osdhud
 bind CM-percent         "osdhud -t"

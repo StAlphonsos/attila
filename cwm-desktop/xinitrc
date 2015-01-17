@@ -2,14 +2,26 @@
 ##
 gsfd=${GS_FONT_DIR-/usr/local/share/ghostscript/fonts}
 xfd=${X_FONT_DIR-/usr/local/lib/X11/fonts}
-for subd in Droid webfonts URW profont mscorefonts; do
-  [ -d ${xfd}/${subd} ] && xset +fp ${xfd}/${subd}/
+echo -n '[FONTS'
+for subd in Droid Liberation anonymous-pro terminus webfonts URW profont mscorefonts jmk Inconsolata dina hermit gohufont; do
+  [ -d ${xfd}/${subd} ] && {
+    echo -n ' '${subd}
+    xset +fp ${xfd}/${subd}/
+  }
 done
 [ -d ${gsfd} ] && xset +fp ${gsfd}/
 xset fp rehash
+echo ']'
+echo -n '[RESOURCES'
 xrdb -merge $HOME/.Xdefaults
 xmodmap $HOME/.xmodmaprc
+echo ']'
+echo -n '[SCREEN'
 xsetroot -solid black
 xscreensaver &
-osdhud -Cwn -i em0
+echo ']'
+echo -n '[HUD'
+osdhud -Cwn -X 2 -i egress
+echo ']'
+echo '[WM]'
 cwm
