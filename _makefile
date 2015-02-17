@@ -15,7 +15,8 @@
 
 SUBDIRS?=bin lib dotfiles emacs
 MAKESYS?=bsdmake BSDmakefile gnumake GNUmakefile _makefile
-OTHERS?=cwm-desktop freebsd-laptop mail-setup openbsd-any x11-desktop VERSION
+OTHERS?=cwm-desktop freebsd-laptop mail-setup openbsd-any \
+        x11-desktop writing VERSION
 
 DESKTOP?=x11
 LAPTOP?=freebsd
