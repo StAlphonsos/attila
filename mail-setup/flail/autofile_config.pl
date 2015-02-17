@@ -32,7 +32,7 @@ $AUTO_FILE = {
         'guru' => '.*@guru.com',
         'odesk' => '.*@odesk.com',
         'inphonex' => '.*\.inphonex.com',
-        'domains' => '@256domains\.com|pdqregistrar\.com|gray\.enom@256',
+        'enom' => '@256domains\.com|pdqregistrar\.com|gray\.enom@256|@256.com',
         'slashdot' => 'slashdot@(|.+)\.slashdot\.org',
         'pair' => '.*@pair\.com',
         'voicemail' => 'Voicemail System.*donotreply@InPhonex.com',
@@ -58,6 +58,7 @@ $AUTO_FILE = {
         'blog' => 'wordpress@thisland\.haqistan\.net',
         'shopping' => '@(|.*\.)vermontcountrystore\.com|@(|.*\.)veganessentials|@(|.*\.)alliedelectronics\.com',
         'couchsurfing' => '@(|.*\.)couchsurfing\.',
+        'gnupg' => '@gnupg\.org',
     },
 #    ':Content' => {
 #        POSIX::strftime("htmlspam_%G%m%d%H",localtime) =>

@@ -1,0 +1,10 @@
+Title: A Letter
+Author: attila@stalphonsos.com
+Date: 6 Feb 2015
+Base Header Level: 1
+latex mode:         letterhead
+latex input:        mmd-letterhead-header
+latex input:        mmd-letterhead-begin-doc
+latex footer:       mmd-letterhead-footer
+
+This is a letter template.

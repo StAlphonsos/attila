@@ -1,9 +1,13 @@
 #!/bin/sh
-##
-date +'%^a %d-%^b-%Y %T'
-#ub grok price aapl goog jpm gs
-ub grok price aapl goog fb
-ub grok 1 XAU to USD
-ub grok 1 EUR to USD
-ub grok 1 USD to MXN
-ub grok 1 MXN to USD
+(exec 2>&1; \
+ echo '+++ Checking the state of the world';
+ ub grok price aapl goog fb xom akam jpm gs;
+ ub grok 1 XAU to USD;
+ ub grok 1 XAU to EUR;
+ ub grok 1 XAU to CHF;
+ ub grok 1 EUR to USD;
+ ub grok 1 EUR to CHF;
+ ub grok 1 USD to JPY;
+ ub grok 1 USD to MXN;
+ ub grok 1 MXN to USD;
+ echo '*** All quiet') | ts -days | tee -a ~/logs/finance.log

@@ -185,4 +185,6 @@ alias aws-lsec2='list_instances -H $AWS_LS_HEADERS'
 onbsd alias suspend='ask_before suspend sudo zzz'
 onlinux alias suspend='ask_before suspend sudo pm-suspend'
 
+alias mu4e="emacsclient -e '(mu4e)'"
+
 [ -f $HOME/.zshaliases_local ] && source $HOME/.zshaliases_local
