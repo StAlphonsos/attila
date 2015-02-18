@@ -6,15 +6,17 @@ say () {
 	echo '****************'
 }
 LOGFILE=${LOGFILE-/home/attila/logs/kernel.log}
+KERNEL=${KERNEL-GENERIC.MP}
 start=`date`
-say logging to $LOGFILE
+say building $KERNEL logging to $LOGFILE
 exec >$LOGFILE 2>&1
-say configuring
+say configuring $KERNEL
 cd /usr/src/sys/arch/`arch -s`/conf
-config GENERIC
-cd ../compile/GENERIC
+config $KERNEL
+say building $KERNEL
+cd ../compile/$KERNEL
 say cleaning
 make clean
 say compiling and installing
 make && make install
-say done - started at $start
+say $KERNEL done - started at $start
