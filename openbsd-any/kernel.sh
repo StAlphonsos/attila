@@ -5,7 +5,7 @@ say () {
 	echo '['`date`'] '"$*"
 	echo '****************'
 }
-LOGFILE=${LOGFILE-/home/attila/logs/kernel.log}
+LOGFILE=${LOGFILE-${HOME}/logs/kernel.log}
 KERNEL=${KERNEL-GENERIC.MP}
 start=`date`
 say building $KERNEL logging to $LOGFILE

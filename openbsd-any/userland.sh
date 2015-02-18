@@ -5,7 +5,7 @@ say () {
 	echo '['`date`'] '"$*"
 	echo '****************'
 }
-LOGFILE=${LOGFILE-/home/attila/logs/userland.log}
+LOGFILE=${LOGFILE-${HOME}/logs/userland.log}
 start=`date`
 say logging to $LOGFILE
 exec >$LOGFILE 2>&1
