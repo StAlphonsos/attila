@@ -25,8 +25,8 @@
 (require 'mu4e)                         ;a not-too-terrible mua
 (require 'signature-fu)                 ;my .sig hacks
 (require 'mml)                          ;mime fu in composition buffers
-(load-library "mc-toplev")              ;dunno why mailcrypt rolls this way
-(mc-setversion "gpg")
+(load-library "mc-toplev")              ;dunno why mailcrypt rolls this way...
+(mc-setversion "gpg")                   ;... but it does
 
 ;; Maps identity token (atom) -> (server port type email name)
 (setq *attila-smtp-alist*
@@ -164,6 +164,14 @@
     (setq *attila-current-identity* id)
     (message "[Set mail identity to: %s]" id)))
 
+(defun attila-next-mail-identity ()
+  (interactive)
+  (let ((id (get-mail-identity)))
+    (if (null id)
+        (message "[Cannot determine mail identity]")
+      (let ((nxt-id (next-mail-identity id)))
+        (set-mail-identity nxt-id)))))
+
 (defun attila-set-mail-identity ()
   (interactive)
   (let ((id (get-mail-identity)))
@@ -191,6 +199,7 @@
   (interactive)
   (mml-mode)
   (local-set-key "\C-ci" 'attila-set-mail-identity)
+  (local-set-key "\C-cn" 'attila-next-mail-identity)
   (local-set-key "\C-c\C-i" 'completion-at-point)
   (local-set-key "\C-c\C-s" 'sign-mail-message)
   (attila-set-mail-identity)
@@ -270,12 +279,13 @@
 ;(setq mail-default-headers "FCC: ~/Mail/outgoing")
 (setq send-mail-function 'smtpmail-send-it)
 (setq message-send-mail-function 'smtpmail-send-it)
-;(setq mc-passwd-timeout 86400
-;      mc-password-reader 'vm-read-password) ;my hack
 (autoload 'mc-install-write-mode "mailcrypt" nil t)
 (autoload 'mc-install-read-mode "mailcrypt" nil t)
 (add-hook 'mail-mode-hook 'mc-install-write-mode)
 (add-hook 'mu4e-compose-mode-hook 'mc-install-write-mode)
+;; No longer use VM...
+;(setq mc-passwd-timeout 86400
+;      mc-password-reader 'vm-read-password) ;my hack
 ;(add-hook 'vm-mode-hook 'mc-install-read-mode)
 ;(add-hook 'vm-summary-mode-hook 'mc-install-read-mode)
 ;(add-hook 'vm-virtual-mode-hook 'mc-install-read-mode)
