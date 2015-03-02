@@ -8,6 +8,7 @@ command ff_profile      "firefox -ProfileManager -new-instance"
 # command netsurf         netsurf
 command gnumeric        gnumeric
 command abiword		abiword
+command xmms		"xterm -e xmms2"
 command audacity	audacity
 command mumble		mumble
 command gimp            gimp
@@ -33,9 +34,9 @@ bind M-percent		osdhud
 bind CM-percent         "osdhud -t"
 bind M-asterisk         open_cutbuffer
 ## EMACS wants these so hands off, cwm
-bind CM-f		unmap
 bind M-l		unmap
 bind CM-f		unmap
+bind C4-f		fullscreen
 bind CMS-f		unmap
 bind CM-Delete		unmap
 ## rebind M-C-x to M-C-d
