@@ -3,31 +3,43 @@
 # perpetually - do something perpetually and timestamp the output into a log
 #
 # I use this command:
-#    $ perpetually finfo --log=$HOME/logs/finance.log
-# to start up my finance watching log.
+#    $ perpetually finance
+# to start up my finance watching log.  Since I have the LOGDIR envar
+# set to ~/logs, this ends up appending time-stamped logs of my view
+# of the financial world to ~/logs/finance.log every 300 seconds.
+#
+# This script depends on my ts script.
 ##
-argval () {
+
+# usage: v=`optval option $string`
+# if $string looks like "--option=foo" then v will be "foo"
+#
+optval () {
     _opt="$1"
     shift
     echo "$*" | sed -e "s/^--${_opt}=//"
 }
 
+## Initialize
+
 sleep=300
 cmd=""
 msg=""
 
+## Parse CLA
+
 while [ x"$1" != x ]; do
     case "$1" in
         --sleep=*)
-	    _sleep=`argval sleep "$1"`
+	    _sleep=`optval sleep "$1"`
 	    echo $0: sleep: $sleep '=>' $_sleep
 	    sleep=$_sleep
 	    ;;
 	--msg=*)
-	    msg=`argval msg "$1"`
+	    msg=`optval msg "$1"`
 	    ;;
 	--log=*)
-	    log=`argval log "$1"`
+	    log=`optval log "$1"`
 	    ;;
 	*)
 	    if [ x"$cmd" = x ]; then
@@ -39,8 +51,11 @@ while [ x"$1" != x ]; do
     esac
     shift
 done
+
+## Apply defaults
+
 [ x"$cmd" = x ] && {
-    echo $0: no command given, msg=$msg
+    echo usage: `basename $0` '[--sleep=s] [--msg=m] [--log=l] 'command
     exit 1
 }
 [ x"$msg" = x ] && {
@@ -49,9 +64,15 @@ done
 [ x"$log" = x ] && {
     _name=`echo ${cmd} | awk '{print $1}'`
     log=`basename ${_name}`.log
+    [ x"${LOGDIR}" != x ] && {
+	log="${LOGDIR}/${log}"
+    }
     echo $0: logging to ${log}
 }
-exec 2>&1
+
+## Drop into our loop
+
+exec 2>&1				# we want stderr in the log
 while true; do
     echo '*** '$msg
     ${cmd}
