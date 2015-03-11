@@ -1,0 +1,11 @@
+#!/bin/sh
+##
+clear
+what=`env DIALOG_TTY=1 dialog --inputbox search 10 60 2>&1`
+clear
+numbers -S "$what"
+echo ''
+echo '[PRESS RETURN TO CLOSE]'
+read
+clear
+exit 0

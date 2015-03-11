@@ -4,7 +4,7 @@
 ###
 ### Sample .flailrc
 ###
-### Time-stamp: <2014-02-13 09:18:22 attila@stalphonsos.com>
+### Time-stamp: <2015-03-09 09:46:25 attila@stalphonsos.com>
 ###
 ### Unfortunately, this file is probably the best documentation to the
 ### flail programmer's interface.  Anyone who wants to pitch in, please
@@ -111,8 +111,13 @@ $AutoSyncIncoming = 0;
 $IMAPAutoExpunge = 1;
 $LeftJustifyList = 1;
 $CheckType = 'spool'; # if you use fetchmail, perhaps
+$GPGBinary = '/usr/local/bin/gpg';
 #$SpoolDir = '/var/spool/mail'; # default is /var/mail
-
+%GPGIdentities = (
+    'attila' => 'E6CC1EDB',
+    'snl' => '70CA0181',
+    'cluefactory'
+);
 
 ## Look in $PREFIX/share/examples/flail for these scripts
 

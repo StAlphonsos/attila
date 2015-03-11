@@ -24,6 +24,7 @@
 (require 'mailcrypt)                    ;crypto
 (require 'mu4e)                         ;a not-too-terrible mua
 (require 'signature-fu)                 ;my .sig hacks
+(require 'message)                      ;replaced mail-mode
 (require 'mml)                          ;mime fu in composition buffers
 (load-library "mc-toplev")              ;dunno why mailcrypt rolls this way...
 (mc-setversion "gpg")                   ;... but it does
@@ -179,27 +180,16 @@
     (if (not (mail-identity-set-p))
         (set-mail-identity id))))
 
-(defun attila-set-gmail-outbound ()
+(defun attila-interactive-mimeify ()
   (interactive)
-  (setq smtpmail-stream-type 'starttls
-        smtpmail-default-smtp-server "smtp.gmail.com"
-        smtpmail-smtp-server "smtp.gmail.com"
-        smtpmail-smtp-user "cluefactory@gmail.com"
-        smtpmail-smtp-service 587))
-
-(defun attila-set-sta-outbound ()
-  (interactive)
-  (setq smtpmail-stream 'plain
-        smtpmail-default-smtp-server "smtp.i.stalphonsos.net"
-        smtpmail-smtp-server "smtp.i.stalphonsos.net"
-        smtpmail-smtp-user "attila"
-        smtpmail-smtp-service 25))
+  (mml-to-mime))
 
 (defun attila-mail-mode-hook ()
   (interactive)
   (mml-mode)
   (local-set-key "\C-ci" 'attila-set-mail-identity)
   (local-set-key "\C-cn" 'attila-next-mail-identity)
+  (local-set-key "\C-cm" 'attila-interactive-mimeify)
   (local-set-key "\C-c\C-i" 'completion-at-point)
   (local-set-key "\C-c\C-s" 'sign-mail-message)
   (attila-set-mail-identity)
@@ -271,7 +261,9 @@
       user-full-name "attila")
 
 ;; When we enter mail composition modes run my hook
+(setq compose-mail-user-agent-warnings nil)
 (add-hook 'mail-mode-hook 'attila-mail-mode-hook)
+(add-hook 'message-mode-hook 'attila-mail-mode-hook)
 (add-hook 'mu4e-compose-mode-hook 'attila-mail-mode-hook)
 ;; I have hacked flail so that it uses .eml as its temp file
 ;; extension.  This is solely so I can do this:
