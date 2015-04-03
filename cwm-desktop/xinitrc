@@ -1,9 +1,13 @@
 #!/bin/sh
 ##
+# we don't need no stinking desktop
+##
+# Fonts
 gsfd=${GS_FONT_DIR-/usr/local/share/ghostscript/fonts}
 xfd=${X_FONT_DIR-/usr/local/lib/X11/fonts}
+FONT_WHORE=${FONT_WHORE-Droid Liberation anonymous-pro terminus webfonts URW profont mscorefonts jmk Inconsolata dina hermit gohufont}
 echo -n '[FONTS'
-for subd in Droid Liberation anonymous-pro terminus webfonts URW profont mscorefonts jmk Inconsolata dina hermit gohufont; do
+for subd in ${FONT_WHORE}; do
   [ -d ${xfd}/${subd} ] && {
     echo -n ' '${subd}
     xset +fp ${xfd}/${subd}/
@@ -12,16 +16,20 @@ done
 [ -d ${gsfd} ] && xset +fp ${gsfd}/
 xset fp rehash
 echo ']'
+# Defaults
 echo -n '[RESOURCES'
 xrdb -merge $HOME/.Xdefaults
 xmodmap $HOME/.xmodmaprc
 echo ']'
+# Background, screensaver
 echo -n '[SCREEN'
 xsetroot -solid black
 xscreensaver &
 echo ']'
+# HUD
 echo -n '[HUD'
 osdhud -Cwn -X 2 -i egress
 echo ']'
+# ... and finally, the star of the show:
 echo '[WM]'
 cwm

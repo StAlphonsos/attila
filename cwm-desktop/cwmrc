@@ -1,14 +1,18 @@
 # attila's cwmrc -*- indent-tabs-mode:nil; mode:conf -*-
 sticky no
-fontname "sans-serif:pixelsize=16:bold"
+fontname		"sans-serif:pixelsize=16:bold"
+command reset		"xrandr --auto"
+command reset:lab	"xrandr --output VGA1 --mode 1680x1050 --above LVDS1"
+command reset:hud	"osdhud -k; osdhud -Cw -X 2 -i egress"
 command lock		"xscreensaver-command -l"
 command clock		"xclock -fg green -hd green -bg black"
-command firefox		firefox
-command ff_profile      "firefox -ProfileManager -new-instance"
-# command netsurf         netsurf
+command ff:default	firefox
+command ff:profiles     "firefox -ProfileManager -new-instance"
+command tor		tor-browser
+#command netsurf         netsurf
+#command xombrero	xombrero
 command gnumeric        gnumeric
 command abiword		abiword
-command xmms		"xterm -e xmms2"
 command audacity	audacity
 command mumble		mumble
 command gimp            gimp
@@ -18,6 +22,7 @@ command etherape	"xterm -fn fixed -e sudo etherape"
 command systat          "xterm -fn fixed -geometry 80x40 -e systat"
 command numz            "xterm -fn fixed -e numz"
 command flail           "xterm -fn fixed -e flail"
+command xmms		"xterm -fn fixed -e xmms2"
 ignore xclock
 ignore xapm
 ignore xclock
@@ -34,13 +39,15 @@ bind M-percent		osdhud
 bind CM-percent         "osdhud -t"
 bind M-asterisk         open_cutbuffer
 ## EMACS wants these so hands off, cwm
+bind CM-f		unmap
 bind M-l		unmap
 bind CM-f		unmap
-bind C4-f		fullscreen
 bind CMS-f		unmap
 bind CM-Delete		unmap
 ## rebind M-C-x to M-C-d
 bind CM-x		unmap
 bind CM-d		delete
 ## suspend key: ask first
-bind CMS-z		"ask_before suspend zzz"
+bind CM-z		"ask_before suspend zzz"
+bind CM-bracketleft	unmap
+bind CM-asciicircum	fullscreen

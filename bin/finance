@@ -1,5 +1,8 @@
 #!/bin/sh
+# Watch finance
+## some stock prices
 ub grok price aapl goog fb xom akam jpm gs
+## the grand FX casino
 ub grok 1 XAU to USD
 ub grok 1 XAU to EUR
 ub grok 1 XAU to CHF
@@ -8,3 +11,4 @@ ub grok 1 EUR to CHF
 ub grok 1 USD to JPY
 ub grok 1 USD to MXN
 ub grok 1 MXN to USD
+ub grok 1 BTC to USD

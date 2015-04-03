@@ -4,7 +4,7 @@
 ###
 ### Sample .flailrc
 ###
-### Time-stamp: <2015-03-09 09:46:25 attila@stalphonsos.com>
+### Time-stamp: <2015-04-03 09:01:44 attila@stalphonsos.com>
 ###
 ### Unfortunately, this file is probably the best documentation to the
 ### flail programmer's interface.  Anyone who wants to pitch in, please
@@ -322,7 +322,6 @@ flail_alias("mark_to","mark ,is_to(%m,\"%*\")");
 flail_alias("mark_spam", "mark ,is_spam(%m)");
 #flail_alias("toss_spam", "map all { toss_spam(); }");
 flail_alias("incoming","cd $IncomingFolder");
-flail_alias("kwt",'cd slevy@kwantera.com/INBOX');
 flail_alias("gmail",'cd cluefactory@gmail.com/INBOX');
 flail_alias("sta",'cd attila@stalphonsos.com/INBOX');
 #flail_alias("spam", "map cur mv %m spam");
@@ -348,7 +347,9 @@ flail_alias("fspam",'spam/filter/verbose 1:$');
 flail_alias("mkdir",'!mu mkdir %*');
 print " done]\n" unless $SingleCommand;
 
-42;
+flail_eval("be StA");
+
+42;                                     # the truth
 
 # Local variables:
 # mode: perl

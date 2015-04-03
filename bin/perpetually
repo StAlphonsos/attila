@@ -8,7 +8,7 @@
 # set to ~/logs, this ends up appending time-stamped logs of my view
 # of the financial world to ~/logs/finance.log every 300 seconds.
 #
-# This script depends on my ts script.
+# This script depends on my ts script, also in ~/bin and visible
 ##
 
 # usage: v=`optval option $string`

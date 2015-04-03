@@ -10,16 +10,26 @@ with zsh as your shell and do "make install" in this tree you'll get
 my zsh environment, along with my EMACS setup, a bunch of utilities in
 ~/bin and a bunch of templates in ~/lib
 
-There is also an X11 desktop environment that I use on BSD unix for
-the most part, although I might switch to this under other OSes as
-well.  It is not installed by default because I'm frequently
-installing this on a server and the desktop is irrelevant.
+There is also an old X11 desktop environment that I used to use on BSD
+Unix for the most part.  I've since switched to using cwm under
+OpenBSD; the config files for this are in cwm-desktop.  None of that
+is installed by default because I'm frequently installing this on a
+server.
+
+There are other elements of my environment that don't necessarily get
+installed but which I maintain here.  For instance, the `writing`
+directory has a Makefile and template multimarkdown files that go with
+it as starting points.  I use this skeleton to set up writing
+environments for various projects so that I can easily go from MMD to
+PDF or HTML.  Also, mail-setup is mostly about flail, my
+always-about-to-be-rewritten MUA in Perl.  It isn't very interesting
+to anyone but me but whatever.
 
 * Build System
 
 I use this environment on both BSD Unix and Linux.  To accomodate
-differences between BSD make and GNU make I have split things in
-two:
+differences between BSD make and GNU make without resorting to
+nonsense like autoconf I have split things in two:
 
  - Every level of the tree has three files: BSDmakefile, GNUmakefile
    and _makefile.  The first two are wrappers that include the third
@@ -27,3 +37,4 @@ two:
    right settings.mk and commands.mk files, which live in
    the bsdmake and gnumake subdirectories at top level in the tree.
  - _makefile has the actual rules and should be make-agnostic
+ - [ ] 

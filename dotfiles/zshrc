@@ -81,7 +81,7 @@ setprompt() {
   _arch=`uname -m`
   case x"$TERM" in
     xemacs|xdumb)
-      export PROMPT="%2~ ${venv_}${load_str_}${git_branch_}%h"$PROMPTAIL
+      export PROMPT="%3~ %h "$PROMPTAIL
       export RPROMPT=""
       ;;
     xcygwin|xeterm|xxterm)

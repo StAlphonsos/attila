@@ -2,11 +2,11 @@
 export PATH=$HOME/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/usr/local/apache/bin:/usr/X11R6/bin:/usr/X11R6/sbin:/bin:/sbin:/usr/games
 export SURFRAW_browser=w3m
 export CVS_RSH=ssh
-export EDITOR=`which zile`
+export EDITOR=mg
 export CVSEDITOR=$EDITOR
-export BROWSER=firefox
+#export BROWSER=firefox
 export NODENAME=`uname -n`
-export MODELINE_HOST=`uname -n | awk -F. '{printf("%s.%s\n",$1,$2)}'`
+export MODELINE_HOST=`uname -n | awk -F. '{print $1}'`
 #export SSH_ASKPASS=/usr/X11R6/bin/ssh-askpass
 #export PKGS=ftp://openbsd.mirrors.pair.com/`uname -r`/packages/i386
 export FTPMODE=passive
